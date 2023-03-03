@@ -1,0 +1,64 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.cloud_rider.idle_draft": {
+			"loop": true,
+			"animation_length": 2,
+			"bones": {
+				"rightarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"1.0": {
+							"vector": [0, 0, 7.5]
+						},
+						"2.0": {
+							"vector": [0, 0, 0]
+						}
+					}
+				},
+				"leftarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"1.0": {
+							"vector": [0, 0, -7.5]
+						},
+						"2.0": {
+							"vector": [0, 0, 0]
+						}
+					}
+				}
+			}
+		},
+		"animation.cloud_rider.attack_draft": {
+			"loop": true,
+			"animation_length": 0.5,
+			"bones": {
+				"rightarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"0.5": {
+							"vector": [1080, 0, 0]
+						}
+					}
+				},
+				"leftarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [180, 0, 0]
+						},
+						"0.5": {
+							"vector": [1260, 0, 0]
+						}
+					}
+				}
+			}
+		}
+	},
+	"geckolib_format_version": 2
+}

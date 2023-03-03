@@ -1,7 +1,11 @@
-package com.example.examplemod;
+package com.leecrafts.cloudrider;
 
+import com.leecrafts.cloudrider.client.CloudRiderRenderer;
+import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import com.leecrafts.cloudrider.item.ModItems;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -23,13 +27,14 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import software.bernie.geckolib.GeckoLib;
 
 // The value here should match an entry in the META-INF/mods.toml file
-@Mod(ExampleMod.MODID)
-public class ExampleMod
+@Mod(CloudRider.MODID)
+public class CloudRider
 {
     // Define mod id in a common place for everything to reference
-    public static final String MODID = "examplemod";
+    public static final String MODID = "cloudrider";
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
     // Create a Deferred Register to hold Blocks which will all be registered under the "examplemod" namespace
@@ -42,9 +47,15 @@ public class ExampleMod
     // Creates a new BlockItem with the id "examplemod:example_block", combining the namespace and path
     public static final RegistryObject<Item> EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block", () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties()));
 
-    public ExampleMod()
+    public CloudRider()
     {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        ModItems.register(modEventBus);
+
+        ModEntityTypes.register(modEventBus);
+
+        GeckoLib.initialize();
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
@@ -70,7 +81,10 @@ public class ExampleMod
 
     private void addCreative(CreativeModeTabEvent.BuildContents event)
     {
-        if (event.getTab() == CreativeModeTabs.BUILDING_BLOCKS)
+        if (event.getTab() == CreativeModeTabs.SPAWN_EGGS) {
+            event.accept(ModItems.CLOUD_RIDER_SPAWN_EGG);
+        }
+        else if (event.getTab() == CreativeModeTabs.BUILDING_BLOCKS)
             event.accept(EXAMPLE_BLOCK_ITEM);
     }
 
@@ -92,6 +106,7 @@ public class ExampleMod
             // Some client setup code
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+            EntityRenderers.register(ModEntityTypes.CLOUD_RIDER.get(), CloudRiderRenderer::new);
         }
     }
 }
