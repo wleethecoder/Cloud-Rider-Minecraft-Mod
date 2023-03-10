@@ -1,6 +1,7 @@
 package com.leecrafts.cloudrider;
 
-import com.leecrafts.cloudrider.client.CloudRiderRenderer;
+import com.leecrafts.cloudrider.client.cloudrider.CloudRiderRenderer;
+import com.leecrafts.cloudrider.client.lightningboltprojectile.LightningBoltProjectileRenderer;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import com.mojang.logging.LogUtils;
@@ -107,6 +108,7 @@ public class CloudRider
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
             EntityRenderers.register(ModEntityTypes.CLOUD_RIDER.get(), CloudRiderRenderer::new);
+            EntityRenderers.register(ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get(), LightningBoltProjectileRenderer::new);
         }
     }
 }

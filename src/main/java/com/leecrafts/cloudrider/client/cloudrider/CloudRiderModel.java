@@ -1,4 +1,4 @@
-package com.leecrafts.cloudrider.client;
+package com.leecrafts.cloudrider.client.cloudrider;
 
 import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
