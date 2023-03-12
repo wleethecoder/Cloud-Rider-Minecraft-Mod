@@ -1,4 +1,4 @@
-package com.leecrafts.cloudrider.capability.player;
+package com.leecrafts.cloudrider.capability.target;
 
 import com.leecrafts.cloudrider.capability.ModCapabilities;
 import net.minecraft.core.Direction;

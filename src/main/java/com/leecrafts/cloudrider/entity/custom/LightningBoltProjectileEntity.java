@@ -2,11 +2,14 @@ package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
+import net.minecraft.world.entity.boss.EnderDragonPart;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
@@ -30,6 +33,8 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     private double shooterZ;
     private int life;
     private final int LIFE_SPAN = 5;
+    private final double MAX_CURVE_ANGLE = 45;
+    private LivingEntity target;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public LightningBoltProjectileEntity(EntityType<? extends Projectile> pEntityType, Level pLevel) {
@@ -48,9 +53,10 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     }
 
     public void shoot(LivingEntity target, float velocity) {
-        double xDir = target.getX() - this.shooterX;
-        double yDir = target.getY() - this.shooterY;
-        double zDir = target.getZ() - this.shooterZ;
+        this.target = target;
+        double xDir = this.target.getX() - this.shooterX;
+        double yDir = this.target.getY() - this.shooterY;
+        double zDir = this.target.getZ() - this.shooterZ;
         this.playSound(SoundEvents.TRIDENT_THROW, 1.0f, 1.0f);
         this.shoot(xDir, yDir, zDir, velocity, 0.0f);
     }
@@ -61,29 +67,48 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
             this.discard();
         }
         this.life++;
-        Vec3 vec3 = this.getDeltaMovement();
         HitResult hitResult = ProjectileUtil.getHitResult(this, this::canHitEntity);
         if (hitResult.getType() != HitResult.Type.MISS && !ForgeEventFactory.onProjectileImpact(this, hitResult)) {
             this.onHit(hitResult);
         }
-        double newX = this.getX() + vec3.x;
-        double newY = this.getY() + vec3.y;
-        double newZ = this.getZ() + vec3.z;
-        this.setDeltaMovement(vec3);
+        Vec3 vec3 = this.getDeltaMovement();
+        if (this.target != null && this.random.nextInt(6) == 0) {
+            double xDir = this.target.getX() - this.getX();
+            double yDir = this.target.getY() - this.getY();
+            double zDir = this.target.getZ() - this.getZ();
+            Vec3 newVec3 = new Vec3(xDir, yDir, zDir);
+            newVec3 = newVec3.normalize().scale(vec3.length());
+            double angle = Math.toDegrees(Math.acos(vec3.dot(newVec3) / (vec3.length() * newVec3.length())));
+            if (!Double.isNaN(angle) && angle < MAX_CURVE_ANGLE) {
+                vec3 = newVec3;
+            }
+        }
+
+        double xNew = this.getX() + vec3.x;
+        double yNew = this.getY() + vec3.y;
+        double zNew = this.getZ() + vec3.z;
         this.updateRotation();
-        this.setPos(newX, newY, newZ);
+        this.setDeltaMovement(vec3);
+        this.setPos(xNew, yNew, zNew);
     }
 
-//    public LightningBoltProjectileEntity(EntityType<? extends LightningBoltProjectileEntity> pEntityType, Level pLevel) {
-//        super(pEntityType, pLevel);
-//    }
-//
-//
     protected void onHitEntity(@NotNull EntityHitResult result) {
         super.onHitEntity(result);
-        Entity entity = this.getOwner();
-        if (!this.level.isClientSide() && entity instanceof LivingEntity) {
-            result.getEntity().hurt(DamageSource.indirectMobAttack(this, (LivingEntity) entity).setProjectile(), this.damage);
+        Entity shooter = this.getOwner();
+        Entity target = result.getEntity();
+        float damage = this.damage;
+        if (!this.level.isClientSide() && (shooter == null || !target.is(shooter))) {
+            DamageSource damageSource = shooter != null ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
+                    new IndirectEntityDamageSource("lightningBolt", this, this);
+            damageSource = damageSource.setProjectile();
+            // The Ender Dragon can be damaged by a lightning bolt projectile because it becomes registered as an "explosion"
+
+            if (target instanceof EnderDragonPart) {
+                damageSource = damageSource.setExplosion();
+                damage = 20.0f;
+            }
+            // TODO enchant effects
+            target.hurt(damageSource, damage);
         }
     }
 
@@ -111,7 +136,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
 
     @Override
     public double getTick(Object o) {
-        return 0;
+        return ((Entity) o).tickCount;
     }
 
 }

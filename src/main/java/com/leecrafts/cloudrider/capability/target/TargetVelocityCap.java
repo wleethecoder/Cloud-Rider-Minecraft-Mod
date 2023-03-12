@@ -1,6 +1,7 @@
-package com.leecrafts.cloudrider.capability.player;
+package com.leecrafts.cloudrider.capability.target;
 
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
@@ -14,6 +15,7 @@ public class TargetVelocityCap implements ITargetVelocityCap {
     public double y;
     public double z;
     public double velocity;
+    public Vec3 vec3;
 
     public TargetVelocityCap() {
         this.initialized = false;
@@ -24,6 +26,7 @@ public class TargetVelocityCap implements ITargetVelocityCap {
         this.y = 0;
         this.z = 0;
         this.velocity = 0;
+        this.vec3 = Vec3.ZERO;
     }
 
     public void initialize(LivingEntity livingEntity) {
@@ -48,6 +51,7 @@ public class TargetVelocityCap implements ITargetVelocityCap {
         double xDist = this.x - this.x0;
         double yDist = this.y - this.y0;
         double zDist = this.z - this.z0;
+        this.vec3 = new Vec3(xDist, yDist, zDist);
         this.velocity = Math.sqrt(xDist * xDist + yDist * yDist + zDist * zDist) * TICKS_PER_SECOND;
     }
 

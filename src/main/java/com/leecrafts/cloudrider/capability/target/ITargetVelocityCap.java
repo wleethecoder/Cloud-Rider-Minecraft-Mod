@@ -1,4 +1,4 @@
-package com.leecrafts.cloudrider.capability.player;
+package com.leecrafts.cloudrider.capability.target;
 
 import net.minecraft.world.entity.LivingEntity;
 
