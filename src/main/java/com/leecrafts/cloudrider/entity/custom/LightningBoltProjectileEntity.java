@@ -2,14 +2,12 @@ package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.EnderDragonPart;
-import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
@@ -32,7 +30,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     private double shooterY;
     private double shooterZ;
     private int life;
-    private final int LIFE_SPAN = 5;
+    private final double LIFE_SPAN = 4;
     private final double MAX_CURVE_ANGLE = 45;
     private LivingEntity target;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -61,6 +59,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.shoot(xDir, yDir, zDir, velocity, 0.0f);
     }
 
+    @Override
     public void tick() {
         super.tick();
         if (this.life >= LIFE_SPAN * TICKS_PER_SECOND) {
@@ -92,26 +91,34 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.setPos(xNew, yNew, zNew);
     }
 
+    @Override
     protected void onHitEntity(@NotNull EntityHitResult result) {
         super.onHitEntity(result);
         Entity shooter = this.getOwner();
         Entity target = result.getEntity();
         float damage = this.damage;
         if (!this.level.isClientSide() && (shooter == null || !target.is(shooter))) {
-            DamageSource damageSource = shooter != null ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
-                    new IndirectEntityDamageSource("lightningBolt", this, this);
+            DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
+                    new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
             // The Ender Dragon can be damaged by a lightning bolt projectile because it becomes registered as an "explosion"
-
             if (target instanceof EnderDragonPart) {
                 damageSource = damageSource.setExplosion();
-                damage = 20.0f;
+                damage = (damage - 1) * 4;
             }
-            // TODO enchant effects
+            else if (target instanceof CloudRiderEntity) {
+                damage *= 2;
+            }
+
+            // TODO test enchant effects
             target.hurt(damageSource, damage);
+            if (shooter instanceof LivingEntity) {
+                this.doEnchantDamageEffects((LivingEntity) shooter, target);
+            }
         }
     }
 
+    @Override
     protected void onHit(@NotNull HitResult hitResult) {
         super.onHit(hitResult);
         if (!this.level.isClientSide()) {

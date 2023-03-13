@@ -3,9 +3,14 @@ package com.leecrafts.cloudrider.client.cloudrider;
 import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import net.minecraft.resources.ResourceLocation;
+import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.model.GeoModel;
 
-public class CloudRiderModel extends GeoModel<CloudRiderEntity> {
+public class CloudRiderModel extends DefaultedEntityGeoModel<CloudRiderEntity> {
+
+    public CloudRiderModel(ResourceLocation assetSubpath) {
+        super(assetSubpath, true);
+    }
 
     @Override
     public ResourceLocation getModelResource(CloudRiderEntity object) {

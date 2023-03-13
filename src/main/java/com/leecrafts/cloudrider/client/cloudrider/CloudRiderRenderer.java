@@ -11,8 +11,8 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class CloudRiderRenderer extends GeoEntityRenderer<CloudRiderEntity> {
 
     public CloudRiderRenderer(EntityRendererProvider.Context renderManager) {
-        super(renderManager, new CloudRiderModel());
-        this.shadowRadius = 1.5f;
+        super(renderManager, new CloudRiderModel(new ResourceLocation(CloudRider.MODID, "geo/cloud_rider.geo.json")));
+        this.shadowRadius = 0.75f;
     }
 
     @Override

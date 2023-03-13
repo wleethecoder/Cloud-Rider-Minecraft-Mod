@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
@@ -21,8 +20,15 @@ public class LightningBoltProjectileRenderer extends GeoEntityRenderer<Lightning
         this.shadowRadius = 0.0f;
     }
 
+    @Override
     public @NotNull ResourceLocation getTextureLocation(@NotNull LightningBoltProjectileEntity instance) {
-        return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture.png");
+        int mod4 = instance.tickCount % 4;
+        if (mod4 == 0 || mod4 == 1){
+            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture1.png");
+        }
+        else {
+            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture2.png");
+        }
     }
 
     @Override

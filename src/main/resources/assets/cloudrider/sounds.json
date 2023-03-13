@@ -1,0 +1,9 @@
+{
+  "entity.cloud_rider.ambient": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.ambient",
+    "sounds": [
+      "cloudrider:cloud_rider/ambient1_placeholder",
+      "cloudrider:cloud_rider/ambient2_placeholder"
+    ]
+  }
+}
