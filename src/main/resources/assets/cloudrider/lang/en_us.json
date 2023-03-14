@@ -2,7 +2,9 @@
   "entity.cloudrider.cloud_rider": "Cloud Rider",
   "entity.cloudrider.lightning_bolt_projectile": "Lightning Bolt",
   "entity.cloudrider.cloud_steed": "Cloud Steed",
+
   "item.cloudrider.cloud_rider_spawn_egg": "Cloud Rider Spawn Egg",
+  "item.cloudrider.cloud_steed": "Cloud Steed",
 
   "sounds.cloudrider.entity.cloud_rider.ambient": "Cloud Rider giggles",
 

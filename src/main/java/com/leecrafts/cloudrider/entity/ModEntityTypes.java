@@ -32,7 +32,7 @@ public class ModEntityTypes {
 
     public static final RegistryObject<EntityType<CloudSteedEntity>> CLOUD_STEED =
             ENTITY_TYPES.register("cloud_steed",
-                    () -> EntityType.Builder.of(CloudSteedEntity::new, MobCategory.MISC)
+                    () -> EntityType.Builder.of((EntityType.EntityFactory<CloudSteedEntity>) CloudSteedEntity::new, MobCategory.MISC)
                             .sized(1.5f, 0.5625f)
                             .build(new ResourceLocation(CloudRider.MODID, "cloud_steed").toString()));
 

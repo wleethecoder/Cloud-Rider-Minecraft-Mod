@@ -61,6 +61,9 @@ public class CloudRider
         if (event.getTab() == CreativeModeTabs.SPAWN_EGGS) {
             event.accept(ModItems.CLOUD_RIDER_SPAWN_EGG);
         }
+        else if (event.getTab() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.accept(ModItems.CLOUD_STEED_ITEM);
+        }
     }
 
 //    // You can use SubscribeEvent and let the Event Bus discover methods to call

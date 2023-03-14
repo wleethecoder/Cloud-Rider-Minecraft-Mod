@@ -1,5 +1,6 @@
 package com.leecrafts.cloudrider.entity.custom;
 
+import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.capability.ModCapabilities;
 import com.leecrafts.cloudrider.capability.cloudriderentity.CloudRiderCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCap;
@@ -9,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -67,6 +69,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private static final RawAnimation IDLE = RawAnimation.begin().thenPlay("animation.cloud_rider.idle_draft");
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay("animation.cloud_rider.attack_draft");
+    private static final ResourceLocation LOOT_TABLE = new ResourceLocation(CloudRider.MODID, "entities/cloud_rider");
 
     public CloudRiderEntity(EntityType<? extends CloudRiderEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
@@ -151,6 +154,11 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     @Override
     public boolean shouldDespawnInPeaceful() {
         return true;
+    }
+
+    @Override
+    protected @NotNull ResourceLocation getDefaultLootTable() {
+        return LOOT_TABLE;
     }
 
     public boolean isAttacking() {

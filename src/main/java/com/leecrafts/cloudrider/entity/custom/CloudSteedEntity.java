@@ -1,5 +1,6 @@
 package com.leecrafts.cloudrider.entity.custom;
 
+import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -21,6 +22,8 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.Objects;
+
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
 public class CloudSteedEntity extends Entity implements GeoAnimatable {
@@ -31,6 +34,11 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
 
     public CloudSteedEntity(EntityType<CloudSteedEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
+    }
+
+    public CloudSteedEntity(double xPos, double yPos, double zPos, Level level) {
+        this(ModEntityTypes.CLOUD_STEED.get(), level);
+        this.setPos(xPos, yPos, zPos);
     }
 
     @Override
@@ -53,7 +61,10 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
         if (this.isInvulnerableTo(pSource)) {
             return false;
         }
-        if (!this.level.isClientSide() && !this.isRemoved()) {
+        if (!this.level.isClientSide && !this.isRemoved()) {
+            if (this.hasControllingPassenger()) {
+                return Objects.requireNonNull(this.getControllingPassenger()).hurt(pSource, pAmount);
+            }
             this.discard();
         }
         return true;
@@ -72,7 +83,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
             // This fixes the bug that makes the steed "disappear" when the passenger dismounts
             this.syncPacketPositionCodec(this.getX(), this.getY(), this.getZ());
 
-            if (this.level.isClientSide()) {
+            if (this.level.isClientSide) {
                 this.controlSteed();
             }
             this.move(MoverType.SELF, this.getDeltaMovement());
@@ -95,8 +106,6 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
                     this.setDeltaMovement(this.getDeltaMovement().scale(0.95));
                 }
                 else {
-                    // TODO clean up movement transition
-                    // maybe create a LocalPlayer capability that remembers what key was last pressed?
                     Vec3 vec3 = localPlayer.getViewVector(1).normalize();
                     if (localPlayer.input.down) {
                         vec3 = vec3.reverse();
@@ -108,10 +117,10 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
                         vec3 = right(vec3, localPlayer);
                     }
 
-                    // additional condition is: OR key has changed
                     Vec3 resultantVector = this.getDeltaMovement().add(vec3.scale(0.04));
-                    this.setDeltaMovement(resultantVector.length() < MAX_SPEED_PER_SECOND / TICKS_PER_SECOND ?
-                            resultantVector : vec3.scale(this.getDeltaMovement().length()));
+                    double maxSpeed = MAX_SPEED_PER_SECOND / TICKS_PER_SECOND;
+                    this.setDeltaMovement(resultantVector.length() < maxSpeed ?
+                            resultantVector : resultantVector.normalize().scale(maxSpeed));
                 }
             }
         }
@@ -131,7 +140,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
     }
 
     private Vec3 rotateCounterClockwise(Vec3 vec3) {
-        return new Vec3(vec3.z, vec3.y, -vec3.x);
+        return new Vec3(vec3.z, 0, -vec3.x);
     }
 
     private Vec3 calculateHorizontalViewVector(float yRot) {
@@ -153,13 +162,12 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
         if (pPlayer.isSecondaryUseActive()) {
             return InteractionResult.PASS;
         }
-        if (!pPlayer.level.isClientSide()) {
+        if (!pPlayer.level.isClientSide) {
             return pPlayer.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;
         }
         return InteractionResult.SUCCESS;
     }
 
-    // TODO fix fall damage instadeath
     @Override
     protected void checkFallDamage(double pY, boolean pOnGround, @NotNull BlockState pState, @NotNull BlockPos pPos) {
         if (!this.isPassenger() && pOnGround) {

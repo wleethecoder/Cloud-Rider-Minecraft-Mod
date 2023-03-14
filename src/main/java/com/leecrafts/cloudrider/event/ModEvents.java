@@ -48,7 +48,7 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void onAttachCapabilitiesEventTargetVelocity(AttachCapabilitiesEvent<Entity> event) {
-            if (event.getObject() instanceof LivingEntity livingEntity && !livingEntity.getCommandSenderWorld().isClientSide()) {
+            if (event.getObject() instanceof LivingEntity livingEntity && !livingEntity.getCommandSenderWorld().isClientSide) {
                 TargetVelocityCapProvider targetVelocityCapProvider = new TargetVelocityCapProvider();
                 event.addCapability(new ResourceLocation(CloudRider.MODID, "velocity_when_targeted_by_cloud_rider"), targetVelocityCapProvider);
                 if (!(livingEntity instanceof Player)) {
@@ -59,7 +59,7 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void onAttachCapabilitiesEventPlayer(AttachCapabilitiesEvent<Entity> event) {
-            if (event.getObject() instanceof Player player && !player.getCommandSenderWorld().isClientSide()) {
+            if (event.getObject() instanceof Player player && !player.getCommandSenderWorld().isClientSide) {
                 PlayerCapProvider playerCapProvider = new PlayerCapProvider();
                 event.addCapability(new ResourceLocation(CloudRider.MODID, "num_cloud_riders"), playerCapProvider);
             }
@@ -67,7 +67,7 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void onAttachCapabilitiesEventCloudRider(AttachCapabilitiesEvent<Entity> event) {
-            if (event.getObject() instanceof CloudRiderEntity cloudRiderEntity && !cloudRiderEntity.getCommandSenderWorld().isClientSide()) {
+            if (event.getObject() instanceof CloudRiderEntity cloudRiderEntity && !cloudRiderEntity.getCommandSenderWorld().isClientSide) {
                 CloudRiderCapProvider cloudRiderCapProvider = new CloudRiderCapProvider();
                 event.addCapability(new ResourceLocation(CloudRider.MODID, "player_id"), cloudRiderCapProvider);
                 event.addListener(cloudRiderCapProvider::invalidate);
@@ -85,7 +85,7 @@ public class ModEvents {
         // TODO to maintain or not to maintain player capability??
         @SubscribeEvent
         public static void playerTick(TickEvent.PlayerTickEvent event) {
-            if (event.player instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide()) {
+            if (event.player instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide) {
                 serverPlayer.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
                     PlayerCap playerCap = (PlayerCap) iPlayerCap;
                     playerCap.numCloudRiders = Math.max(playerCap.numCloudRiders, 0);
@@ -134,7 +134,7 @@ public class ModEvents {
 
 //        @SubscribeEvent
 //        public static void test(LivingEvent.LivingTickEvent event) {
-//            if (event.getEntity() instanceof Player player && !player.level.isClientSide()) {
+//            if (event.getEntity() instanceof Player player && !player.level.isClientSide) {
 //                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
 //                    PlayerCap playerCap = (PlayerCap) iPlayerCap;
 //                    System.out.println(playerCap.numCloudRiders);

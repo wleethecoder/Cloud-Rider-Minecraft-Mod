@@ -40,7 +40,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     }
 
     public LightningBoltProjectileEntity(Level level, LivingEntity shooter, float damage) {
-        super(ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get(), level);
+        this(ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get(), level);
         this.setOwner(shooter);
         Vec3 vec3 = shooter.getViewVector(1);
         this.shooterX = shooter.getX() + vec3.x;
@@ -97,7 +97,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         Entity shooter = this.getOwner();
         Entity target = result.getEntity();
         float damage = this.damage;
-        if (!this.level.isClientSide() && (shooter == null || !target.is(shooter))) {
+        if (!this.level.isClientSide && (shooter == null || !target.is(shooter))) {
             DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
                     new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
@@ -105,9 +105,6 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
             if (target instanceof EnderDragonPart) {
                 damageSource = damageSource.setExplosion();
                 damage = (damage - 1) * 4;
-            }
-            else if (target instanceof CloudRiderEntity) {
-                damage *= 2;
             }
 
             // TODO test enchant effects
@@ -121,7 +118,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     @Override
     protected void onHit(@NotNull HitResult hitResult) {
         super.onHit(hitResult);
-        if (!this.level.isClientSide()) {
+        if (!this.level.isClientSide) {
             this.playSound(SoundEvents.GENERIC_EXPLODE, 1.0f, 1.0f);
             this.discard();
         }
