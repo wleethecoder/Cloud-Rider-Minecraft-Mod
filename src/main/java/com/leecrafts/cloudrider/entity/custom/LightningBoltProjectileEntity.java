@@ -1,6 +1,7 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
@@ -11,6 +12,10 @@ import net.minecraft.world.entity.boss.EnderDragonPart;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -22,6 +27,7 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
+import static net.minecraft.world.level.block.Blocks.*;
 
 public class LightningBoltProjectileEntity extends Projectile implements GeoAnimatable {
 
@@ -92,10 +98,10 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     }
 
     @Override
-    protected void onHitEntity(@NotNull EntityHitResult result) {
-        super.onHitEntity(result);
+    protected void onHitEntity(@NotNull EntityHitResult pResult) {
+        super.onHitEntity(pResult);
         Entity shooter = this.getOwner();
-        Entity target = result.getEntity();
+        Entity target = pResult.getEntity();
         float damage = this.damage;
         if (!this.level.isClientSide && (shooter == null || !target.is(shooter))) {
             DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
@@ -106,6 +112,9 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
                 damageSource = damageSource.setExplosion();
                 damage = (damage - 1) * 4;
             }
+            else if (target instanceof CloudRiderEntity) {
+                damage *= 2;
+            }
 
             // TODO test enchant effects
             target.hurt(damageSource, damage);
@@ -115,9 +124,39 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         }
     }
 
+    // TODO water behavior?
     @Override
-    protected void onHit(@NotNull HitResult hitResult) {
-        super.onHit(hitResult);
+    protected void onHitBlock(@NotNull BlockHitResult pResult) {
+        super.onHitBlock(pResult);
+        Level level = this.level;
+        if (!level.isClientSide && isConductible(level.getBlockState(pResult.getBlockPos()))) {
+            ElectricAreaEffectCloud electricAreaEffectCloud =
+                    new ElectricAreaEffectCloud(level, this.getX(), this.getY(), this.getZ());
+            if (this.getOwner() instanceof LivingEntity livingEntity) {
+                electricAreaEffectCloud.setOwner(livingEntity);
+            }
+            level.addFreshEntity(electricAreaEffectCloud);
+        }
+    }
+
+    private boolean isConductible(BlockState blockState) {
+        Block block = blockState.getBlock();
+        Material material = blockState.getMaterial();
+        return (material == Material.METAL || material == Material.HEAVY_METAL || material == Material.WATER) &&
+                block != LAPIS_BLOCK &&
+                block != DIAMOND_BLOCK &&
+                block != BREWING_STAND &&
+                block != EMERALD_BLOCK &&
+                block != REDSTONE_BLOCK &&
+                block != NETHERITE_BLOCK &&
+                block != ANCIENT_DEBRIS &&
+                block != GRINDSTONE &&
+                block != LODESTONE;
+    }
+
+    @Override
+    protected void onHit(@NotNull HitResult pResult) {
+        super.onHit(pResult);
         if (!this.level.isClientSide) {
             this.playSound(SoundEvents.GENERIC_EXPLODE, 1.0f, 1.0f);
             this.discard();

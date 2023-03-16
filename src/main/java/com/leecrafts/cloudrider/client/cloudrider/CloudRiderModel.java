@@ -1,6 +1,7 @@
 package com.leecrafts.cloudrider.client.cloudrider;
 
 import com.leecrafts.cloudrider.CloudRider;
+import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
@@ -18,8 +19,13 @@ public class CloudRiderModel extends DefaultedEntityGeoModel<CloudRiderEntity> {
     }
 
     @Override
-    public ResourceLocation getTextureResource(CloudRiderEntity object) {
-        return new ResourceLocation(CloudRider.MODID, "textures/entity/cloud_rider_texture.png");
+    public ResourceLocation getTextureResource(CloudRiderEntity animatable) {
+        if (animatable.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get()) {
+            return new ResourceLocation(CloudRider.MODID, "textures/entity/white_cloud_rider_texture.png");
+        }
+        else {
+            return new ResourceLocation(CloudRider.MODID, "textures/entity/gray_cloud_rider_texture.png");
+        }
     }
 
     @Override

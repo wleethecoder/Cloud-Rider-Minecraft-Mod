@@ -8,16 +8,15 @@ import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.client.renderer.entity.NoopRenderer;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CreativeModeTabEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import software.bernie.geckolib.GeckoLib;
@@ -59,10 +58,12 @@ public class CloudRider
     private void addCreative(CreativeModeTabEvent.BuildContents event)
     {
         if (event.getTab() == CreativeModeTabs.SPAWN_EGGS) {
-            event.accept(ModItems.CLOUD_RIDER_SPAWN_EGG);
+            event.accept(ModItems.WHITE_CLOUD_RIDER_SPAWN_EGG);
+            event.accept(ModItems.GRAY_CLOUD_RIDER_SPAWN_EGG);
         }
         else if (event.getTab() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(ModItems.CLOUD_STEED_ITEM);
+            event.accept(ModItems.WHITE_CLOUD_STEED_ITEM);
+            event.accept(ModItems.GRAY_CLOUD_STEED_ITEM);
         }
     }
 
@@ -80,9 +81,11 @@ public class CloudRider
         public static void onClientSetup(FMLClientSetupEvent event)
         {
             // Some client setup code
-            EntityRenderers.register(ModEntityTypes.CLOUD_RIDER.get(), CloudRiderRenderer::new);
+            EntityRenderers.register(ModEntityTypes.WHITE_CLOUD_RIDER.get(), CloudRiderRenderer::new);
+            EntityRenderers.register(ModEntityTypes.GRAY_CLOUD_RIDER.get(), CloudRiderRenderer::new);
             EntityRenderers.register(ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get(), LightningBoltProjectileRenderer::new);
             EntityRenderers.register(ModEntityTypes.CLOUD_STEED.get(), CloudSteedRenderer::new);
+            EntityRenderers.register(ModEntityTypes.ELECTRIC_AREA_EFFECT_CLOUD.get(), NoopRenderer::new);
         }
     }
 }

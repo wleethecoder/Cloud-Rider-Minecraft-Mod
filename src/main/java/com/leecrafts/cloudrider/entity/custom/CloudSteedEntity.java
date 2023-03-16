@@ -1,19 +1,30 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import com.leecrafts.cloudrider.item.ModItems;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ByIdMap;
 import net.minecraft.util.Mth;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,14 +33,16 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.IntFunction;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
-public class CloudSteedEntity extends Entity implements GeoAnimatable {
+public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHolder<CloudSteedEntity.Type> {
 
+    private static final EntityDataAccessor<Integer> DATA_ID_TYPE = SynchedEntityData.defineId(CloudSteedEntity.class, EntityDataSerializers.INT);
     private final double MAX_SPEED_PER_SECOND = 20;
-
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public CloudSteedEntity(EntityType<CloudSteedEntity> pEntityType, Level pLevel) {
@@ -65,6 +78,9 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
             if (this.hasControllingPassenger()) {
                 return Objects.requireNonNull(this.getControllingPassenger()).hurt(pSource, pAmount);
             }
+            if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+                this.spawnAtLocation(this.getDropItem());
+            }
             this.discard();
         }
         return true;
@@ -80,13 +96,46 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
         super.tick();
         if (this.isControlledByLocalInstance()) {
 
-            // This fixes the bug that makes the steed "disappear" when the passenger dismounts
+            // This fixes the bug that occasionally makes the steed "disappear" when the passenger dismounts
             this.syncPacketPositionCodec(this.getX(), this.getY(), this.getZ());
 
             if (this.level.isClientSide) {
                 this.controlSteed();
             }
+
             this.move(MoverType.SELF, this.getDeltaMovement());
+        }
+        // Gray cloud steeds summons thunder on enemy mobs below it
+        // The mob has to be on the ground, so this will probably not work on cloud riders!
+        else if (this.getControllingPassenger() instanceof LivingEntity passenger && this.getVariant() == Type.GRAY) {
+            if (this.tickCount % 10 == 0) {
+                for (int i = this.getBlockY(); i >= -64; i--) {
+                    BlockPos blockPos = this.blockPosition().atY(i);
+                    if (!this.level.getBlockState(blockPos).isAir()) {
+                        AABB aabb = (new AABB(blockPos.above())).inflate(2.5, 1, 2.5);
+                        List<LivingEntity> list = this.level.getEntitiesOfClass(LivingEntity.class, aabb);
+                        boolean shouldStrike = false;
+                        for (LivingEntity livingEntity : list) {
+                            if (livingEntity instanceof Enemy ||
+                                    livingEntity instanceof Monster ||
+                                    (passenger.getLastHurtByMob() != null && passenger.getLastHurtByMob().is(livingEntity))) {
+                                shouldStrike = true;
+                            }
+                        }
+                        if (shouldStrike) {
+                            LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(this.level);
+                            if (lightningBolt != null) {
+                                lightningBolt.moveTo(Vec3.atBottomCenterOf(blockPos.above()));
+                                lightningBolt.setCause(this.getControllingPassenger() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
+                                this.level.addFreshEntity(lightningBolt);
+                            }
+                        }
+                        if (this.level.getBlockState(blockPos).getMaterial().isSolid()) {
+                            break;
+                        }
+                    }
+                }
+            }
         }
         else {
             this.setDeltaMovement(Vec3.ZERO);
@@ -102,45 +151,76 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
                 // Update steed's rotation so that the steed faces where the passenger faces
                 this.setYRot(localPlayer.getYHeadRot());
 
-                if (noWASD(localPlayer)) {
-                    this.setDeltaMovement(this.getDeltaMovement().scale(0.95));
+                // Pressing space cancels y movement, easing the control of horizontal movement
+                double slowdownFactor = 0.95;
+                Vec3 deltaMovement = this.getDeltaMovement();
+                if (noMoveKeysPressed(localPlayer)) {
+                    this.setDeltaMovement(deltaMovement.scale(slowdownFactor));
+                }
+                else if (noWASD(localPlayer)) {
+                    this.setDeltaMovement(deltaMovement.multiply(slowdownFactor, 0, slowdownFactor));
                 }
                 else {
-                    Vec3 vec3 = localPlayer.getViewVector(1).normalize();
+                    Vec3 vec3 = localPlayer.getViewVector(1);
                     if (localPlayer.input.down) {
                         vec3 = vec3.reverse();
                     }
                     else if (localPlayer.input.left) {
-                        vec3 = left(vec3, localPlayer);
+                        vec3 = strictLeft(vec3, localPlayer);
                     }
                     else if (localPlayer.input.right) {
-                        vec3 = right(vec3, localPlayer);
+                        vec3 = strictRight(vec3, localPlayer);
                     }
 
-                    Vec3 resultantVector = this.getDeltaMovement().add(vec3.scale(0.04));
+                    if (localPlayer.input.jumping) {
+                        vec3 = toXZ(vec3);
+                        if (Math.abs(vec3.x) < 1e-15 && Math.abs(vec3.z) < 1e-15) {
+                            if (localPlayer.input.up) {
+                                vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1));
+                            }
+                            else if (localPlayer.input.down) {
+                                vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1)).reverse();
+                            }
+                        }
+                    }
+                    vec3 = vec3.normalize();
+
+                    Vec3 resultantVector = deltaMovement.add(vec3.scale(0.04));
                     double maxSpeed = MAX_SPEED_PER_SECOND / TICKS_PER_SECOND;
                     this.setDeltaMovement(resultantVector.length() < maxSpeed ?
                             resultantVector : resultantVector.normalize().scale(maxSpeed));
+
+                    if (localPlayer.input.jumping) {
+                        this.setDeltaMovement(toXZ(this.getDeltaMovement()));
+                    }
                 }
+
             }
         }
     }
 
+    private boolean noMoveKeysPressed(LocalPlayer localPlayer) {
+        return noWASD(localPlayer) && !localPlayer.input.jumping;
+    }
     private boolean noWASD(LocalPlayer localPlayer) {
         return !localPlayer.input.up && !localPlayer.input.down && !localPlayer.input.left && !localPlayer.input.right;
     }
 
-    private Vec3 left(Vec3 vec3, LocalPlayer passenger) {
-        return rotateCounterClockwise(Math.abs(vec3.normalize().y) != 1.0 ?
+    private Vec3 strictLeft(Vec3 vec3, LocalPlayer passenger) {
+        return left(Math.abs(vec3.normalize().y) != 1.0 ?
                 vec3 : calculateHorizontalViewVector(passenger.getViewYRot(1)));
     }
 
-    private Vec3 right(Vec3 vec3, LocalPlayer passenger) {
-        return left(vec3, passenger).multiply(-1, 1, -1);
+    private Vec3 strictRight(Vec3 vec3, LocalPlayer passenger) {
+        return strictLeft(vec3, passenger).multiply(-1, 1, -1);
     }
 
-    private Vec3 rotateCounterClockwise(Vec3 vec3) {
+    private Vec3 left(Vec3 vec3) {
         return new Vec3(vec3.z, 0, -vec3.x);
+    }
+
+    private Vec3 toXZ(Vec3 vec3) {
+        return vec3.multiply(1, 0, 1);
     }
 
     private Vec3 calculateHorizontalViewVector(float yRot) {
@@ -186,16 +266,29 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
         return super.getFirstPassenger();
     }
 
+    @Nullable
+    @Override
+    public ItemStack getPickResult() {
+        return new ItemStack(this.getDropItem());
+    }
+
+    public Item getDropItem() {
+        return this.getVariant() == Type.WHITE ? ModItems.WHITE_CLOUD_STEED_ITEM.get() : ModItems.GRAY_CLOUD_STEED_ITEM.get();
+    }
+
     @Override
     protected void defineSynchedData() {
+        this.entityData.define(DATA_ID_TYPE, 0);
     }
 
     @Override
     protected void readAdditionalSaveData(@NotNull CompoundTag pCompound) {
+        this.setVariant(CloudSteedEntity.Type.byName(pCompound.getString("Type")));
     }
 
     @Override
     protected void addAdditionalSaveData(@NotNull CompoundTag pCompound) {
+        pCompound.putString("Type", this.getVariant().getSerializedName());
     }
 
     @Override
@@ -211,4 +304,48 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable {
     public double getTick(Object o) {
         return ((Entity) o).tickCount;
     }
+
+    @Override
+    public void setVariant(@NotNull Type pVariant) {
+        this.entityData.set(DATA_ID_TYPE, pVariant.getId());
+    }
+
+    @Override
+    public @NotNull Type getVariant() {
+        return CloudSteedEntity.Type.byId(this.entityData.get(DATA_ID_TYPE));
+    }
+
+    public static enum Type implements StringRepresentable {
+        WHITE(0, "white"),
+        GRAY(1, "gray");
+
+        private final int id;
+        private final String name;
+        public static final StringRepresentable.EnumCodec<CloudSteedEntity.Type> CODEC = StringRepresentable.fromEnum(CloudSteedEntity.Type::values);
+        private static final IntFunction<CloudSteedEntity.Type> BY_ID = ByIdMap.continuous(CloudSteedEntity.Type::getId, values(), ByIdMap.OutOfBoundsStrategy.ZERO);
+
+        Type(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return this.name;
+        }
+
+        public int getId() {
+            return this.id;
+        }
+
+        public static CloudSteedEntity.Type byId(int index) {
+            return BY_ID.apply(index);
+        }
+
+        public static CloudSteedEntity.Type byName(String name) {
+            return CODEC.byName(name, WHITE);
+        }
+
+    }
+
 }

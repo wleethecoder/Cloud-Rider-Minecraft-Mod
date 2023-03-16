@@ -1,13 +1,20 @@
 {
-  "entity.cloudrider.cloud_rider": "Cloud Rider",
+  "entity.cloudrider.white_cloud_rider": "Cloud Rider",
+  "entity.cloudrider.gray_cloud_rider": "Cloud Rider",
   "entity.cloudrider.lightning_bolt_projectile": "Lightning Bolt",
   "entity.cloudrider.cloud_steed": "Cloud Steed",
+  "entity.cloudrider.electric_area_effect_cloud": "Electric Area Affect Cloud",
 
-  "item.cloudrider.cloud_rider_spawn_egg": "Cloud Rider Spawn Egg",
-  "item.cloudrider.cloud_steed": "Cloud Steed",
+  "item.cloudrider.white_cloud_rider_spawn_egg": "Cloud Rider Spawn Egg",
+  "item.cloudrider.gray_cloud_rider_spawn_egg": "Gray Cloud Rider Spawn Egg",
+  "item.cloudrider.white_cloud_steed": "Cloud Steed",
+  "item.cloudrider.gray_cloud_steed": "Gray Cloud Steed",
 
   "sounds.cloudrider.entity.cloud_rider.ambient": "Cloud Rider giggles",
 
-  "death.attack.lightningBoltProjectile": "%1$s was struck down by a %2$s"
+  "death.attack.lightningBoltProjectile": "%1$s was struck down by %2$s",
+  "death.attack.lightningBoltProjectile.item": "%1$s was shot by %2$s using %3$s",
+  "death.attack.electrocution": "%1$s was electrocuted to death",
+  "death.attack.electrocution.player": "%1$s was electrocuted to death whilst trying to escape %2$s"
 
 }

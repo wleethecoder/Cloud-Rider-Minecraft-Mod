@@ -7,6 +7,7 @@ import com.leecrafts.cloudrider.capability.player.PlayerCap;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.sound.ModSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -69,7 +70,8 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private static final RawAnimation IDLE = RawAnimation.begin().thenPlay("animation.cloud_rider.idle_draft");
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay("animation.cloud_rider.attack_draft");
-    private static final ResourceLocation LOOT_TABLE = new ResourceLocation(CloudRider.MODID, "entities/cloud_rider");
+    private static final ResourceLocation LOOT_TABLE_WHITE = new ResourceLocation(CloudRider.MODID, "entities/white_cloud_rider");
+    private static final ResourceLocation LOOT_TABLE_GRAY = new ResourceLocation(CloudRider.MODID, "entities/gray_cloud_rider");
 
     public CloudRiderEntity(EntityType<? extends CloudRiderEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
@@ -102,6 +104,14 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_IS_ATTACKING, false);
+    }
+
+    @Override
+    public void readAdditionalSaveData(@NotNull CompoundTag pCompound) {
+    }
+
+    @Override
+    public void addAdditionalSaveData(@NotNull CompoundTag pCompound) {
     }
 
     private <E extends GeoAnimatable> PlayState predicate(AnimationState<E> event) {
@@ -147,6 +157,14 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     }
 
     @Override
+    protected @NotNull ResourceLocation getDefaultLootTable() {
+        if (this.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get()) {
+            return LOOT_TABLE_WHITE;
+        }
+        return LOOT_TABLE_GRAY;
+    }
+
+    @Override
     public boolean canAttackType(@NotNull EntityType<?> type) {
         return true;
     }
@@ -154,11 +172,6 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     @Override
     public boolean shouldDespawnInPeaceful() {
         return true;
-    }
-
-    @Override
-    protected @NotNull ResourceLocation getDefaultLootTable() {
-        return LOOT_TABLE;
     }
 
     public boolean isAttacking() {
@@ -174,7 +187,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         for (int i = 0; i < 2; i++) {
             BlockPos blockPos1 = blockPos.above(i);
             BlockState blockState1 = serverLevel.getBlockState(blockPos1);
-            if (!NaturalSpawner.isValidEmptySpawnBlock(serverLevel, blockPos, blockState1, blockState1.getFluidState(), ModEntityTypes.CLOUD_RIDER.get())) {
+            if (!NaturalSpawner.isValidEmptySpawnBlock(serverLevel, blockPos, blockState1, blockState1.getFluidState(), ModEntityTypes.WHITE_CLOUD_RIDER.get())) {
                 return false;
             }
         }
@@ -192,6 +205,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                 });
             }
         });
+        // TODO fix mysterious disappearance problem (persistencerequired becomes false even with name tag)
         super.remove(removalReason);
     }
 

@@ -12,27 +12,34 @@ import com.leecrafts.cloudrider.capability.target.ITargetVelocityCap;
 import com.leecrafts.cloudrider.capability.target.TargetVelocityCapProvider;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
+import com.leecrafts.cloudrider.item.ModItems;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import static com.leecrafts.cloudrider.capability.player.PlayerCap.SPAWN_RADIUS;
-import static com.leecrafts.cloudrider.entity.custom.CloudRiderEntity.*;
+import static com.leecrafts.cloudrider.entity.custom.CloudRiderEntity.CLOUD_LEVEL;
+import static com.leecrafts.cloudrider.entity.custom.CloudRiderEntity.MAX_SPAWN_PER_PLAYER;
 
 public class ModEvents {
 
@@ -74,11 +81,6 @@ public class ModEvents {
             }
         }
 
-//        @SubscribeEvent
-//        public static void targetTick(LivingEvent.LivingTickEvent event) {
-//
-//        }
-
         // TODO 2 new capabilities:
         // player capability that tracks how many cloudriders it caused the spawning of
         // cloud rider capability that tracks the player id
@@ -103,7 +105,7 @@ public class ModEvents {
                         BlockPos blockPos = new BlockPos(xSpawn, CLOUD_LEVEL, zSpawn);
                         if (serverPlayer.distanceToSqr(xSpawn, CLOUD_LEVEL, zSpawn) > 576 &&
                                 CloudRiderEntity.isValidSpawn(blockPos, serverLevel)) {
-                            CloudRiderEntity cloudRiderEntity = ModEntityTypes.CLOUD_RIDER.get().spawn(serverLevel, blockPos, MobSpawnType.NATURAL);
+                            CloudRiderEntity cloudRiderEntity = ModEntityTypes.WHITE_CLOUD_RIDER.get().spawn(serverLevel, blockPos, MobSpawnType.NATURAL);
                             if (cloudRiderEntity != null) {
                                 cloudRiderEntity.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
                                     CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
@@ -142,6 +144,22 @@ public class ModEvents {
 //            }
 //        }
 
+        @SubscribeEvent
+        public static void droppedCloudSteedItemEvent(EntityJoinLevelEvent event) {
+            if (event.getEntity() instanceof ItemEntity itemEntity && !itemEntity.level.isClientSide) {
+                if (itemEntity.getItem().is(ModItems.WHITE_CLOUD_STEED_ITEM.get()) ||
+                        itemEntity.getItem().is(ModItems.GRAY_CLOUD_STEED_ITEM.get())) {
+                    itemEntity.setNoGravity(true);
+                    itemEntity.setDeltaMovement(Vec3.ZERO);
+                    MutableComponent mutableComponent = MutableComponent.create(ComponentContents.EMPTY);
+                    mutableComponent = mutableComponent.setStyle(itemEntity.getItem().getRarity().getStyleModifier().apply(mutableComponent.getStyle()));
+                    mutableComponent = mutableComponent.setStyle(mutableComponent.getStyle().applyFormat(ChatFormatting.BOLD));
+                    mutableComponent = mutableComponent.append(itemEntity.getName());
+                    itemEntity.setCustomName(mutableComponent);
+                    itemEntity.setCustomNameVisible(true);
+                }
+            }
+        }
 
     }
 
@@ -150,7 +168,8 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void entityAttributeEvent(EntityAttributeCreationEvent event) {
-            event.put(ModEntityTypes.CLOUD_RIDER.get(), CloudRiderEntity.setAttributes());
+            event.put(ModEntityTypes.WHITE_CLOUD_RIDER.get(), CloudRiderEntity.setAttributes());
+            event.put(ModEntityTypes.GRAY_CLOUD_RIDER.get(), CloudRiderEntity.setAttributes());
         }
 
         // Normal spawning mechanics just won't do

@@ -15,8 +15,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class CloudSteedItem extends Item {
 
-    public CloudSteedItem(Properties pProperties) {
+    private final CloudSteedEntity.Type type;
+
+    public CloudSteedItem(CloudSteedEntity.Type type, Properties pProperties) {
         super(pProperties);
+        this.type = type;
     }
 
     // TODO think about player placing in front, or below
@@ -26,6 +29,7 @@ public class CloudSteedItem extends Item {
         HitResult hitresult = getPlayerPOVHitResult(pLevel, pPlayer, ClipContext.Fluid.ANY);
 
         CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ(), pLevel);
+        cloudSteedEntity.setVariant(this.type);
         cloudSteedEntity.setYRot(pPlayer.getYRot());
 
         // no need to check for hitresult because this item can be placed on the air

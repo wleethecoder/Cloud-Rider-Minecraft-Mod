@@ -3,9 +3,9 @@ package com.leecrafts.cloudrider.entity;
 import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
+import com.leecrafts.cloudrider.entity.custom.ElectricAreaEffectCloud;
 import com.leecrafts.cloudrider.entity.custom.LightningBoltProjectileEntity;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -18,11 +18,17 @@ public class ModEntityTypes {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, CloudRider.MODID);
 
-    public static final RegistryObject<EntityType<CloudRiderEntity>> CLOUD_RIDER =
-            ENTITY_TYPES.register("cloud_rider",
+    public static final RegistryObject<EntityType<CloudRiderEntity>> WHITE_CLOUD_RIDER =
+            ENTITY_TYPES.register("white_cloud_rider",
                     () -> EntityType.Builder.of(CloudRiderEntity::new, MobCategory.MONSTER)
                             .sized(0.6f, 1.8f)
-                            .build(new ResourceLocation(CloudRider.MODID, "cloud_rider").toString()));
+                            .build(new ResourceLocation(CloudRider.MODID, "white_cloud_rider").toString()));
+
+    public static final RegistryObject<EntityType<CloudRiderEntity>> GRAY_CLOUD_RIDER =
+            ENTITY_TYPES.register("gray_cloud_rider",
+                    () -> EntityType.Builder.of(CloudRiderEntity::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.8f)
+                            .build(new ResourceLocation(CloudRider.MODID, "gray_cloud_rider").toString()));
 
     public static final RegistryObject<EntityType<LightningBoltProjectileEntity>> LIGHTNING_BOLT_PROJECTILE =
             ENTITY_TYPES.register("lightning_bolt_projectile",
@@ -35,6 +41,14 @@ public class ModEntityTypes {
                     () -> EntityType.Builder.of((EntityType.EntityFactory<CloudSteedEntity>) CloudSteedEntity::new, MobCategory.MISC)
                             .sized(1.5f, 0.5625f)
                             .build(new ResourceLocation(CloudRider.MODID, "cloud_steed").toString()));
+
+    public static final RegistryObject<EntityType<ElectricAreaEffectCloud>> ELECTRIC_AREA_EFFECT_CLOUD =
+            ENTITY_TYPES.register("electric_area_effect_cloud",
+                    () -> EntityType.Builder.of((EntityType.EntityFactory<ElectricAreaEffectCloud>) ElectricAreaEffectCloud::new, MobCategory.MISC)
+                            .fireImmune()
+                            .sized(5.0f, 5.0f)
+                            .updateInterval(Integer.MAX_VALUE)
+                            .build(new ResourceLocation(CloudRider.MODID, "electric_area_effect_cloud").toString()));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);

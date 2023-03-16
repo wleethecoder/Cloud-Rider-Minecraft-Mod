@@ -16,6 +16,10 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 public class CloudSteedRenderer extends GeoEntityRenderer<CloudSteedEntity> {
 
+    // TODO transparent when riding?
+    private static final ResourceLocation WHITE_CLOUD_STEED_TEXUTRE = new ResourceLocation(CloudRider.MODID, "textures/entity/white_cloud_steed_texture.png");
+    private static final ResourceLocation GRAY_CLOUD_STEED_TEXUTRE = new ResourceLocation(CloudRider.MODID, "textures/entity/gray_cloud_steed_texture.png");
+
     public CloudSteedRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, new CloudSteedModel());
         this.shadowRadius = 0.75f;
@@ -23,7 +27,12 @@ public class CloudSteedRenderer extends GeoEntityRenderer<CloudSteedEntity> {
 
     @Override
     public @NotNull ResourceLocation getTextureLocation(@NotNull CloudSteedEntity animatable) {
-        return new ResourceLocation(CloudRider.MODID, "textures/entity/cloud_steed_texture.png");
+        if (animatable.getVariant() == CloudSteedEntity.Type.WHITE) {
+            return WHITE_CLOUD_STEED_TEXUTRE;
+        }
+        else {
+            return GRAY_CLOUD_STEED_TEXUTRE;
+        }
     }
 
     @Override

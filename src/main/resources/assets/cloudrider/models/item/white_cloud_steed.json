@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "cloudrider:item/cloud_steed"
+    "layer0": "cloudrider:item/white_cloud_steed"
   }
 }
