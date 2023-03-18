@@ -21,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -81,10 +82,6 @@ public class ModEvents {
             }
         }
 
-        // TODO 2 new capabilities:
-        // player capability that tracks how many cloudriders it caused the spawning of
-        // cloud rider capability that tracks the player id
-        // TODO to maintain or not to maintain player capability??
         @SubscribeEvent
         public static void playerTick(TickEvent.PlayerTickEvent event) {
             if (event.player instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide) {
@@ -105,7 +102,8 @@ public class ModEvents {
                         BlockPos blockPos = new BlockPos(xSpawn, CLOUD_LEVEL, zSpawn);
                         if (serverPlayer.distanceToSqr(xSpawn, CLOUD_LEVEL, zSpawn) > 576 &&
                                 CloudRiderEntity.isValidSpawn(blockPos, serverLevel)) {
-                            CloudRiderEntity cloudRiderEntity = ModEntityTypes.WHITE_CLOUD_RIDER.get().spawn(serverLevel, blockPos, MobSpawnType.NATURAL);
+                            EntityType<CloudRiderEntity> entityType = !serverLevel.isThundering() ? ModEntityTypes.WHITE_CLOUD_RIDER.get() : ModEntityTypes.GRAY_CLOUD_RIDER.get();
+                            CloudRiderEntity cloudRiderEntity = entityType.spawn(serverLevel, blockPos, MobSpawnType.NATURAL);
                             if (cloudRiderEntity != null) {
                                 cloudRiderEntity.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
                                     CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;

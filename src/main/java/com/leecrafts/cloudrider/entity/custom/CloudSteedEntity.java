@@ -9,6 +9,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.fluids.FluidType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
@@ -70,20 +72,38 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     }
 
     @Override
+    public boolean isPushedByFluid(FluidType type) {
+        return false;
+    }
+
+    @Override
     public boolean hurt(@NotNull DamageSource pSource, float pAmount) {
         if (this.isInvulnerableTo(pSource)) {
             return false;
         }
         if (!this.level.isClientSide && !this.isRemoved()) {
+            // TODO new damagesource? aka lightning bolt from the steed?
+            // you don't want it to be destroyed by its own lightning bolts
+            // TODO particles
+            if (pSource == DamageSource.LAVA ||
+                    (pSource.getDirectEntity() != null && pSource.getDirectEntity().getType() == ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get())) {
+                this.playSound(SoundEvents.FIRE_EXTINGUISH);
+                this.destroy();
+                return true;
+            }
             if (this.hasControllingPassenger()) {
                 return Objects.requireNonNull(this.getControllingPassenger()).hurt(pSource, pAmount);
             }
-            if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
-                this.spawnAtLocation(this.getDropItem());
-            }
-            this.discard();
+            this.destroy();
         }
         return true;
+    }
+
+    private void destroy() {
+        if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+            this.spawnAtLocation(this.getDropItem());
+        }
+        this.discard();
     }
 
     @Override
@@ -94,6 +114,9 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     @Override
     public void tick() {
         super.tick();
+        if (this.level.dimensionType().ultraWarm()) {
+            this.hurt(DamageSource.LAVA, 0);
+        }
         if (this.isControlledByLocalInstance()) {
 
             // This fixes the bug that occasionally makes the steed "disappear" when the passenger dismounts

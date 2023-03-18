@@ -1,16 +1,25 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.boss.EnderDragonPart;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Guardian;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -107,13 +116,29 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
             DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
                     new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
+            if (target instanceof Player || target instanceof Mob || target instanceof ArmorStand) {
+                if (target.isInWaterRainOrBubble() || target instanceof IronGolem) {
+                    this.electrify(this.level, target.getX(), target.getY(), target.getZ());
+                }
+                else {
+                    Iterable<ItemStack> armorSlots = target.getArmorSlots();
+                    for (ItemStack itemStack : armorSlots) {
+                        if (this.isConductibleArmor(itemStack.getItem())) {
+                            this.electrify(this.level, target.getX(), target.getY(), target.getZ());
+                            break;
+                        }
+                    }
+                }
+                if (target instanceof CloudRiderEntity ||
+                        target instanceof WaterAnimal ||
+                        target instanceof Guardian) {
+                    damage *= 2;
+                }
+            }
             // The Ender Dragon can be damaged by a lightning bolt projectile because it becomes registered as an "explosion"
-            if (target instanceof EnderDragonPart) {
+            else if (target instanceof EnderDragonPart) {
                 damageSource = damageSource.setExplosion();
                 damage = (damage - 1) * 4;
-            }
-            else if (target instanceof CloudRiderEntity) {
-                damage *= 2;
             }
 
             // TODO test enchant effects
@@ -129,17 +154,33 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     protected void onHitBlock(@NotNull BlockHitResult pResult) {
         super.onHitBlock(pResult);
         Level level = this.level;
-        if (!level.isClientSide && isConductible(level.getBlockState(pResult.getBlockPos()))) {
-            ElectricAreaEffectCloud electricAreaEffectCloud =
-                    new ElectricAreaEffectCloud(level, this.getX(), this.getY(), this.getZ());
-            if (this.getOwner() instanceof LivingEntity livingEntity) {
-                electricAreaEffectCloud.setOwner(livingEntity);
-            }
-            level.addFreshEntity(electricAreaEffectCloud);
+        if (!level.isClientSide && isConductibleBlock(level.getBlockState(pResult.getBlockPos()))) {
+            this.electrify(level);
         }
     }
 
-    private boolean isConductible(BlockState blockState) {
+    private void electrify(Level level, double x, double y, double z) {
+        ElectricAreaEffectCloud electricAreaEffectCloud =
+                new ElectricAreaEffectCloud(level, x, y, z);
+        if (this.getOwner() instanceof LivingEntity livingEntity) {
+            electricAreaEffectCloud.setOwner(livingEntity);
+        }
+        level.addFreshEntity(electricAreaEffectCloud);
+    }
+
+    private void electrify(Level level) {
+        this.electrify(level, this.getX(), this.getY(), this.getZ());
+    }
+
+    private boolean isConductibleArmor(Item item) {
+        return item instanceof ArmorItem armorItem &&
+                (armorItem.getMaterial() == ArmorMaterials.IRON ||
+                        armorItem.getMaterial() == ArmorMaterials.CHAIN ||
+                        armorItem.getMaterial() == ArmorMaterials.GOLD ||
+                        armorItem.getMaterial() == ArmorMaterials.IRON);
+    }
+
+    private boolean isConductibleBlock(BlockState blockState) {
         Block block = blockState.getBlock();
         Material material = blockState.getMaterial();
         return (material == Material.METAL || material == Material.HEAVY_METAL || material == Material.WATER) &&

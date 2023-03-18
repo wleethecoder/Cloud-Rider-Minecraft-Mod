@@ -5,5 +5,11 @@
       "cloudrider:cloud_rider/ambient1_placeholder",
       "cloudrider:cloud_rider/ambient2_placeholder"
     ]
+  },
+  "entity.cloud_rider.vaporize": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.vaporize",
+    "sounds": [
+      "cloudrider:cloud_rider/vaporize_placeholder"
+    ]
   }
 }

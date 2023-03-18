@@ -15,6 +15,7 @@ public class ModSounds {
             DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, CloudRider.MODID);
 
     public static final RegistryObject<SoundEvent> CLOUD_RIDER_AMBIENT = registerSoundEvent("entity.cloud_rider.ambient");
+    public static final RegistryObject<SoundEvent> CLOUD_RIDER_VAPORIZE = registerSoundEvent("entity.cloud_rider.vaporize");
 
     private static RegistryObject<SoundEvent> registerSoundEvent(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(CloudRider.MODID, name)));

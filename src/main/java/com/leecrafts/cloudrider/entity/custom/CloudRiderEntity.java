@@ -16,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -49,7 +50,6 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.EnumSet;
-import java.util.function.Predicate;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
@@ -72,6 +72,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay("animation.cloud_rider.attack_draft");
     private static final ResourceLocation LOOT_TABLE_WHITE = new ResourceLocation(CloudRider.MODID, "entities/white_cloud_rider");
     private static final ResourceLocation LOOT_TABLE_GRAY = new ResourceLocation(CloudRider.MODID, "entities/gray_cloud_rider");
+    public static final DamageSource VAPORIZE = new DamageSource("vaporize");
 
     public CloudRiderEntity(EntityType<? extends CloudRiderEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
@@ -96,8 +97,38 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
 
         this.targetSelector.addGoal(0, new CloudRiderEntity.CloudRiderEntityHurtByTargetGoal(this, true));
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 0, true, false, new CloudRiderEntity.CloudRiderAttackSelector()));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true, target -> target.level.dimension() == Level.OVERWORLD));
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 0, true, false, this::canAttackMob));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true, this::canAttackPlayer));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!this.level.isClientSide) {
+            // Dies in the Nether
+            if (this.level.dimensionType().ultraWarm()) {
+                this.vaporize();
+            }
+
+            if (this.tickCount % 20 == 0 &&
+                    !this.isDeadOrDying() &&
+                    this.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get() &&
+                    this.level.isThundering() &&
+                    !this.hasCustomName()) {
+                ServerLevel serverLevel = (ServerLevel) this.level;
+                CloudRiderEntity grayCloudRiderEntity = ModEntityTypes.GRAY_CLOUD_RIDER.get().create(serverLevel);
+                if (grayCloudRiderEntity != null) {
+                    grayCloudRiderEntity.setHealth(this.getHealth());
+                    // TODO rotation
+                    grayCloudRiderEntity.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+                    grayCloudRiderEntity.setNoAi(this.isNoAi());
+                    serverLevel.addFreshEntityWithPassengers(grayCloudRiderEntity);
+                    this.playSound(SoundEvents.BEACON_POWER_SELECT);
+                    // TODO particles
+                    this.discard();
+                }
+            }
+        }
     }
 
     @Override
@@ -112,6 +143,36 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
 
     @Override
     public void addAdditionalSaveData(@NotNull CompoundTag pCompound) {
+    }
+
+    @Override
+    public boolean hurt(@NotNull DamageSource pSource, float pAmount) {
+        if (pSource == DamageSource.LAVA || pSource == DamageSource.LIGHTNING_BOLT) {
+            return this.vaporize();
+        }
+        return super.hurt(pSource, pAmount);
+    }
+
+    // TODO particles
+    private boolean vaporize() {
+        if (this.isDeadOrDying()) return false;
+        this.playSound(SoundEvents.FIRE_EXTINGUISH);
+        this.playSound(ModSounds.CLOUD_RIDER_VAPORIZE.get());
+        return super.hurt(VAPORIZE, Float.MAX_VALUE);
+    }
+
+    @Override
+    public void remove(@NotNull RemovalReason removalReason) {
+        this.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
+            CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
+            if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
+                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
+                    PlayerCap playerCap = (PlayerCap) iPlayerCap;
+                    if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
+                });
+            }
+        });
+        super.remove(removalReason);
     }
 
     private <E extends GeoAnimatable> PlayState predicate(AnimationState<E> event) {
@@ -170,6 +231,11 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     }
 
     @Override
+    public boolean removeWhenFarAway(double pDistanceToClosestPlayer) {
+        return !this.hasCustomName();
+    }
+
+    @Override
     public boolean shouldDespawnInPeaceful() {
         return true;
     }
@@ -194,21 +260,6 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         return true;
     }
 
-    @Override
-    public void remove(@NotNull RemovalReason removalReason) {
-        this.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
-            CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
-            if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
-                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
-                    PlayerCap playerCap = (PlayerCap) iPlayerCap;
-                    if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
-                });
-            }
-        });
-        // TODO fix mysterious disappearance problem (persistencerequired becomes false even with name tag)
-        super.remove(removalReason);
-    }
-
     public static double getTargetLevel(LivingEntity livingEntity) {
         return livingEntity.level.dimension() == Level.OVERWORLD ? CLOUD_LEVEL : TARGET_LEVEL_END;
     }
@@ -217,23 +268,18 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         return livingEntity.level.dimension() == Level.OVERWORLD ? LOWEST_LEVEL_OVERWORLD : LOWEST_LEVEL_END;
     }
 
-    static class CloudRiderAttackSelector implements Predicate<LivingEntity> {
+    private boolean canAttackMob(LivingEntity mob) {
+        return mob instanceof EnderDragon ||
+                mob instanceof FlyingAnimal ||
+                mob instanceof Chicken ||
+                mob instanceof Bat ||
+                (mob instanceof FlyingMob && !(mob instanceof CloudRiderEntity));
+    }
 
-//        private final CloudRiderEntity cloudRiderEntity;
-//
-//        public CloudRiderAttackSelector(CloudRiderEntity cloudRiderEntity) {
-//            this.cloudRiderEntity = cloudRiderEntity;
-//        }
-
-        @Override
-        public boolean test(LivingEntity livingEntity) {
-            return livingEntity instanceof EnderDragon ||
-                    livingEntity instanceof FlyingAnimal ||
-                    livingEntity instanceof Chicken ||
-                    livingEntity instanceof Bat ||
-                    (livingEntity instanceof FlyingMob && !(livingEntity instanceof CloudRiderEntity));
-        }
-
+    private boolean canAttackPlayer(LivingEntity player) {
+        return player.level.dimension() == Level.OVERWORLD &&
+                (player.getVehicle() == null || player.getVehicle().getType() != ModEntityTypes.CLOUD_STEED.get()) &&
+                (player.getActiveEffectsMap() == null || !player.hasEffect(MobEffects.INVISIBILITY));
     }
 
     static class CloudRiderMoveControl extends MoveControl {
@@ -280,12 +326,18 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     static class ChaseTargetGoal extends Goal {
 
         public int chargeTime;
+        public float damage;
 
         private final CloudRiderEntity cloudRiderEntity;
 
         public ChaseTargetGoal(CloudRiderEntity cloudRiderEntity) {
             this.cloudRiderEntity = cloudRiderEntity;
             this.setFlags(EnumSet.of(Flag.TARGET));
+            this.damage = ATTACK_DAMAGE;
+            // gray cloud riders do 33.3% more damage
+            if (this.cloudRiderEntity.getType() == ModEntityTypes.GRAY_CLOUD_RIDER.get()) {
+                this.damage *= (4.0 / 3);
+            }
         }
 
         @Override
@@ -325,7 +377,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                     LightningBoltProjectileEntity projectile = new LightningBoltProjectileEntity(
                             level,
                             this.cloudRiderEntity,
-                            ATTACK_DAMAGE);
+                            this.damage);
                     projectile.shoot(target, PROJECTILE_SPEED_PER_SECOND / TICKS_PER_SECOND);
                     level.addFreshEntity(projectile);
                     this.chargeTime = 0;

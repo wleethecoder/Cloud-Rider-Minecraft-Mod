@@ -11,10 +11,12 @@
   "item.cloudrider.gray_cloud_steed": "Gray Cloud Steed",
 
   "sounds.cloudrider.entity.cloud_rider.ambient": "Cloud Rider giggles",
+  "sounds.cloudrider.entity.cloud_rider.vaporize": "Cloud Rider gets vaporized",
 
   "death.attack.lightningBoltProjectile": "%1$s was struck down by %2$s",
   "death.attack.lightningBoltProjectile.item": "%1$s was shot by %2$s using %3$s",
   "death.attack.electrocution": "%1$s was electrocuted to death",
-  "death.attack.electrocution.player": "%1$s was electrocuted to death whilst trying to escape %2$s"
-
+  "death.attack.electrocution.player": "%1$s was electrocuted to death whilst trying to escape %2$s",
+  "death.attack.vaporize": "%1$s was vaporized without a trace",
+  "death.attack.vaporize.player": "%1$s was vaporized without a trace whilst trying to escape %2$s"
 }
