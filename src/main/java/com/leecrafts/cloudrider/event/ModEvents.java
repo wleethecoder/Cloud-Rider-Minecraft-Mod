@@ -8,8 +8,7 @@ import com.leecrafts.cloudrider.capability.cloudriderentity.ICloudRiderCap;
 import com.leecrafts.cloudrider.capability.player.IPlayerCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCapProvider;
-import com.leecrafts.cloudrider.capability.target.ITargetVelocityCap;
-import com.leecrafts.cloudrider.capability.target.TargetVelocityCapProvider;
+import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import com.leecrafts.cloudrider.item.ModItems;
@@ -19,10 +18,8 @@ import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -31,16 +28,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import static com.leecrafts.cloudrider.capability.player.PlayerCap.SPAWN_RADIUS;
 import static com.leecrafts.cloudrider.entity.custom.CloudRiderEntity.CLOUD_LEVEL;
-import static com.leecrafts.cloudrider.entity.custom.CloudRiderEntity.MAX_SPAWN_PER_PLAYER;
 
 public class ModEvents {
 
@@ -49,20 +45,8 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-            event.register(ITargetVelocityCap.class);
             event.register(IPlayerCap.class);
             event.register(ICloudRiderCap.class);
-        }
-
-        @SubscribeEvent
-        public static void onAttachCapabilitiesEventTargetVelocity(AttachCapabilitiesEvent<Entity> event) {
-            if (event.getObject() instanceof LivingEntity livingEntity && !livingEntity.getCommandSenderWorld().isClientSide) {
-                TargetVelocityCapProvider targetVelocityCapProvider = new TargetVelocityCapProvider();
-                event.addCapability(new ResourceLocation(CloudRider.MODID, "velocity_when_targeted_by_cloud_rider"), targetVelocityCapProvider);
-                if (!(livingEntity instanceof Player)) {
-                    event.addListener(targetVelocityCapProvider::invalidate);
-                }
-            }
         }
 
         @SubscribeEvent
@@ -83,31 +67,31 @@ public class ModEvents {
         }
 
         @SubscribeEvent
-        public static void playerTick(TickEvent.PlayerTickEvent event) {
-            if (event.player instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide) {
-                serverPlayer.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
+        public static void playerTick(LivingEvent.LivingTickEvent event) {
+            if (event.getEntity() instanceof Player player && !player.level.isClientSide) {
+                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
                     PlayerCap playerCap = (PlayerCap) iPlayerCap;
                     playerCap.numCloudRiders = Math.max(playerCap.numCloudRiders, 0);
-                    ServerLevel serverLevel = serverPlayer.getLevel();
-                    if (playerCap.numCloudRiders < MAX_SPAWN_PER_PLAYER &&
+                    ServerLevel serverLevel = (ServerLevel) player.getLevel();
+                    if (playerCap.numCloudRiders < CloudRiderCommonConfigs.CLOUD_RIDER_SPAWN_CAP.get() &&
                             serverLevel.dimension() == Level.OVERWORLD &&
-                            !serverPlayer.isSpectator() &&
-                            serverPlayer.getY() > CLOUD_LEVEL - SPAWN_RADIUS + 5 &&
-                            serverPlayer.getY() < CLOUD_LEVEL + SPAWN_RADIUS - 5 &&
+                            !player.isSpectator() &&
+                            player.getY() > CLOUD_LEVEL - SPAWN_RADIUS + 5 &&
+                            player.getY() < CLOUD_LEVEL + SPAWN_RADIUS - 5 &&
                             serverLevel.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)) {
-                        double xSpawn = serverPlayer.getX() - SPAWN_RADIUS +
-                                serverPlayer.getRandom().nextInt(SPAWN_RADIUS * 2);
-                        double zSpawn = serverPlayer.getZ() - SPAWN_RADIUS +
-                                serverPlayer.getRandom().nextInt(SPAWN_RADIUS * 2);
+                        double xSpawn = player.getX() - SPAWN_RADIUS +
+                                player.getRandom().nextInt(SPAWN_RADIUS * 2);
+                        double zSpawn = player.getZ() - SPAWN_RADIUS +
+                                player.getRandom().nextInt(SPAWN_RADIUS * 2);
                         BlockPos blockPos = new BlockPos(xSpawn, CLOUD_LEVEL, zSpawn);
-                        if (serverPlayer.distanceToSqr(xSpawn, CLOUD_LEVEL, zSpawn) > 576 &&
+                        if (player.distanceToSqr(xSpawn, CLOUD_LEVEL, zSpawn) >= 576 &&
                                 CloudRiderEntity.isValidSpawn(blockPos, serverLevel)) {
                             EntityType<CloudRiderEntity> entityType = !serverLevel.isThundering() ? ModEntityTypes.WHITE_CLOUD_RIDER.get() : ModEntityTypes.GRAY_CLOUD_RIDER.get();
                             CloudRiderEntity cloudRiderEntity = entityType.spawn(serverLevel, blockPos, MobSpawnType.NATURAL);
                             if (cloudRiderEntity != null) {
                                 cloudRiderEntity.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
                                     CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
-                                    cloudRiderCap.playerId = serverPlayer.getId();
+                                    cloudRiderCap.playerId = player.getId();
                                     playerCap.numCloudRiders++;
                                     System.out.println("☁️ spawned in thanks to player " + cloudRiderCap.playerId);
                                 });
@@ -141,7 +125,6 @@ public class ModEvents {
 //                });
 //            }
 //        }
-
         @SubscribeEvent
         public static void droppedCloudSteedItemEvent(EntityJoinLevelEvent event) {
             if (event.getEntity() instanceof ItemEntity itemEntity && !itemEntity.level.isClientSide) {

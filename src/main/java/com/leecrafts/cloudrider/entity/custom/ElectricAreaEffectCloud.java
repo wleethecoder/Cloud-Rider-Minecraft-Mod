@@ -1,6 +1,7 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import com.leecrafts.cloudrider.sound.ModSounds;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
@@ -14,6 +15,8 @@ import java.util.List;
 
 public class ElectricAreaEffectCloud extends AreaEffectCloud {
 
+    public int ambientSoundTime;
+
     public ElectricAreaEffectCloud(EntityType<? extends AreaEffectCloud> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
         this.setParticle(ParticleTypes.ELECTRIC_SPARK);
@@ -25,6 +28,7 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
     public ElectricAreaEffectCloud(Level level, double xPos, double yPos, double zPos) {
         this(ModEntityTypes.ELECTRIC_AREA_EFFECT_CLOUD.get(), level);
         this.setPos(xPos, yPos - this.getRadius(), zPos);
+        this.playAmbientSound();
     }
 
     @Override
@@ -56,11 +60,27 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
                 }
             }
         }
+
+        if (this.random.nextInt(10) < this.ambientSoundTime) {
+            this.playAmbientSound();
+        }
+        else {
+            this.ambientSoundTime++;
+        }
     }
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull Pose pPose) {
         return EntityDimensions.fixed(this.getRadius() * 2, this.getRadius() * 2);
+    }
+
+    private void playAmbientSound() {
+        this.playSound(ModSounds.ELECTRIC_AREA_EFFECT_CLOUD_AMBIENT.get(), 1.0f, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+        this.resetAmbientSoundTime();
+    }
+
+    private void resetAmbientSoundTime() {
+        this.ambientSoundTime = -5;
     }
 
 }

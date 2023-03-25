@@ -22,7 +22,6 @@ public class CloudSteedItem extends Item {
         this.type = type;
     }
 
-    // TODO think about player placing in front, or below
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level pLevel, Player pPlayer, @NotNull InteractionHand pUsedHand) {
         ItemStack itemStack = pPlayer.getItemInHand(pUsedHand);

@@ -1,19 +1,19 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"animation.cloud_rider.idle_draft": {
+		"animation.cloud_rider.idle": {
 			"loop": true,
-			"animation_length": 2,
+			"animation_length": 4,
 			"bones": {
 				"rightarm": {
 					"rotation": {
 						"0.0": {
 							"vector": [0, 0, 0]
 						},
-						"1.0": {
-							"vector": [0, 0, 7.5]
-						},
 						"2.0": {
+							"vector": [0, 0, 3.75]
+						},
+						"4.0": {
 							"vector": [0, 0, 0]
 						}
 					}
@@ -23,17 +23,17 @@
 						"0.0": {
 							"vector": [0, 0, 0]
 						},
-						"1.0": {
-							"vector": [0, 0, -7.5]
-						},
 						"2.0": {
+							"vector": [0, 0, -3.5]
+						},
+						"4.0": {
 							"vector": [0, 0, 0]
 						}
 					}
 				}
 			}
 		},
-		"animation.cloud_rider.attack_draft": {
+		"animation.cloud_rider.attack": {
 			"loop": true,
 			"animation_length": 0.5,
 			"bones": {
@@ -54,6 +54,68 @@
 						},
 						"0.5": {
 							"vector": [1260, 0, 0]
+						}
+					}
+				}
+			}
+		},
+		"animation.cloud_rider.charge": {
+			"loop": "hold_on_last_frame",
+			"animation_length": 4,
+			"bones": {
+				"head": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"3.0": {
+							"vector": [17.5, 0, 0]
+						},
+						"3.25": {
+							"vector": [-12.5, 0, 0],
+							"easing": "easeOutExpo"
+						},
+						"4.0": {
+							"vector": [0, 0, 0],
+							"easing": "easeInCubic"
+						}
+					}
+				},
+				"rightarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [-71.45165, 19.03771, 6.24605]
+						},
+						"3.0": {
+							"vector": [-72.10193, -11.91276, -3.81397],
+							"easing": "linear"
+						},
+						"3.25": {
+							"vector": [-25, 72.5, 90],
+							"easing": "easeOutExpo"
+						},
+						"4.0": {
+							"vector": [0, 0, 0],
+							"easing": "easeInCubic"
+						}
+					}
+				},
+				"leftarm": {
+					"rotation": {
+						"0.0": {
+							"vector": [-71.45165, -19.03771, -6.24605]
+						},
+						"3.0": {
+							"vector": [-72.10193, 11.91276, 3.81397],
+							"easing": "linear"
+						},
+						"3.25": {
+							"vector": [-25, -72.5, -90],
+							"easing": "easeOutExpo"
+						},
+						"4.0": {
+							"vector": [0, 0, 0],
+							"easing": "easeInCubic"
 						}
 					}
 				}

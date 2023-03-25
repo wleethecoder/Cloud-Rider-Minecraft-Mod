@@ -1,7 +1,10 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import com.leecrafts.cloudrider.sound.ModSounds;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
@@ -35,18 +38,19 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.Objects;
+
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 import static net.minecraft.world.level.block.Blocks.*;
 
 public class LightningBoltProjectileEntity extends Projectile implements GeoAnimatable {
 
     private float damage;
-    private double shooterX;
-    private double shooterY;
-    private double shooterZ;
     private int life;
+    private boolean isCharged;
     private final double LIFE_SPAN = 4;
     private final double MAX_CURVE_ANGLE = 45;
+    public int ambientSoundTime;
     private LivingEntity target;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -54,23 +58,21 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         super(pEntityType, pLevel);
     }
 
-    public LightningBoltProjectileEntity(Level level, LivingEntity shooter, float damage) {
+    public LightningBoltProjectileEntity(Level level, LivingEntity shooter, float damage, boolean isCharged) {
         this(ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get(), level);
         this.setOwner(shooter);
         Vec3 vec3 = shooter.getViewVector(1);
-        this.shooterX = shooter.getX() + vec3.x;
-        this.shooterY = shooter.getY(0.5);
-        this.shooterZ = shooter.getZ() + vec3.z;
-        this.setPos(this.shooterX, this.shooterY, this.shooterZ);
+        this.setPos( shooter.getX() + vec3.x * 0.6, shooter.getY(0.5), shooter.getZ() + vec3.z * 0.6);
         this.damage = damage;
+        this.isCharged = isCharged;
+        this.resetAmbientSoundTime();
     }
 
     public void shoot(LivingEntity target, float velocity) {
         this.target = target;
-        double xDir = this.target.getX() - this.shooterX;
-        double yDir = this.target.getY() - this.shooterY;
-        double zDir = this.target.getZ() - this.shooterZ;
-        this.playSound(SoundEvents.TRIDENT_THROW, 1.0f, 1.0f);
+        double xDir = this.target.getX() - this.getX();
+        double yDir = this.target.getY(0.5) - this.getY();
+        double zDir = this.target.getZ() - this.getZ();
         this.shoot(xDir, yDir, zDir, velocity, 0.0f);
     }
 
@@ -86,9 +88,9 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
             this.onHit(hitResult);
         }
         Vec3 vec3 = this.getDeltaMovement();
-        if (this.target != null && this.random.nextInt(6) == 0) {
+        if (this.target != null && (this.isCharged || this.random.nextInt(6) == 0)) {
             double xDir = this.target.getX() - this.getX();
-            double yDir = this.target.getY() - this.getY();
+            double yDir = this.target.getY(0.5) - this.getY();
             double zDir = this.target.getZ() - this.getZ();
             Vec3 newVec3 = new Vec3(xDir, yDir, zDir);
             newVec3 = newVec3.normalize().scale(vec3.length());
@@ -104,27 +106,40 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.updateRotation();
         this.setDeltaMovement(vec3);
         this.setPos(xNew, yNew, zNew);
+
+        this.level.addAlwaysVisibleParticle(ParticleTypes.ELECTRIC_SPARK, this.getX(), this.getY(), this.getZ(), 0, 0, 0);
+        if (this.random.nextInt(3) < this.ambientSoundTime) {
+            this.playAmbientSound();
+        }
+        else {
+            this.ambientSoundTime++;
+        }
     }
 
     @Override
     protected void onHitEntity(@NotNull EntityHitResult pResult) {
-        super.onHitEntity(pResult);
+//        super.onHitEntity(pResult);
         Entity shooter = this.getOwner();
         Entity target = pResult.getEntity();
-        float damage = this.damage;
+        float damage;
         if (!this.level.isClientSide && (shooter == null || !target.is(shooter))) {
             DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
                     new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
+
+            // setScalesWithDifficulty() will not work because scalesWithDifficulty() will always return false (LightningBoltProjectileEntity is not a LivingEntity)
+            damage = this.scaleWithDifficulty(this.damage);
+
+            boolean mustElectrify = this.isCharged;
             if (target instanceof Player || target instanceof Mob || target instanceof ArmorStand) {
                 if (target.isInWaterRainOrBubble() || target instanceof IronGolem) {
-                    this.electrify(this.level, target.getX(), target.getY(), target.getZ());
+                    mustElectrify = true;
                 }
                 else {
                     Iterable<ItemStack> armorSlots = target.getArmorSlots();
                     for (ItemStack itemStack : armorSlots) {
                         if (this.isConductibleArmor(itemStack.getItem())) {
-                            this.electrify(this.level, target.getX(), target.getY(), target.getZ());
+                            mustElectrify = true;
                             break;
                         }
                     }
@@ -141,7 +156,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
                 damage = (damage - 1) * 4;
             }
 
-            // TODO test enchant effects
+            if (mustElectrify) this.electrify(target.getX(), target.getY(0.5), target.getZ());
             target.hurt(damageSource, damage);
             if (shooter instanceof LivingEntity) {
                 this.doEnchantDamageEffects((LivingEntity) shooter, target);
@@ -149,27 +164,39 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         }
     }
 
-    // TODO water behavior?
+    private float scaleWithDifficulty(float damage) {
+        if (this.level.getDifficulty() == Difficulty.PEACEFUL) {
+            return 0.0F;
+        }
+        if (this.level.getDifficulty() == Difficulty.EASY) {
+            return Math.min(damage / 2.0f + 1.0f, damage);
+        }
+        if (this.level.getDifficulty() == Difficulty.NORMAL) {
+            return damage;
+        }
+        return damage * 1.5f;
+    }
+
     @Override
     protected void onHitBlock(@NotNull BlockHitResult pResult) {
         super.onHitBlock(pResult);
-        Level level = this.level;
-        if (!level.isClientSide && isConductibleBlock(level.getBlockState(pResult.getBlockPos()))) {
-            this.electrify(level);
+        if (!this.level.isClientSide &&
+                (this.isCharged || this.isInWaterRainOrBubble() || isConductibleBlock(this.level.getBlockState(pResult.getBlockPos())))) {
+            this.electrify();
         }
     }
 
-    private void electrify(Level level, double x, double y, double z) {
+    private void electrify(double x, double y, double z) {
         ElectricAreaEffectCloud electricAreaEffectCloud =
-                new ElectricAreaEffectCloud(level, x, y, z);
+                new ElectricAreaEffectCloud(this.level, x, y, z);
         if (this.getOwner() instanceof LivingEntity livingEntity) {
             electricAreaEffectCloud.setOwner(livingEntity);
         }
-        level.addFreshEntity(electricAreaEffectCloud);
+        this.level.addFreshEntity(electricAreaEffectCloud);
     }
 
-    private void electrify(Level level) {
-        this.electrify(level, this.getX(), this.getY(), this.getZ());
+    private void electrify() {
+        this.electrify(this.getX(), this.getY(), this.getZ());
     }
 
     private boolean isConductibleArmor(Item item) {
@@ -183,7 +210,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     private boolean isConductibleBlock(BlockState blockState) {
         Block block = blockState.getBlock();
         Material material = blockState.getMaterial();
-        return (material == Material.METAL || material == Material.HEAVY_METAL || material == Material.WATER) &&
+        return (material == Material.METAL || material == Material.HEAVY_METAL) &&
                 block != LAPIS_BLOCK &&
                 block != DIAMOND_BLOCK &&
                 block != BREWING_STAND &&
@@ -210,7 +237,6 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
-
     }
 
     @Override
@@ -221,6 +247,15 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     @Override
     public double getTick(Object o) {
         return ((Entity) o).tickCount;
+    }
+
+    private void playAmbientSound() {
+        this.playSound(ModSounds.LIGHTNING_BOLT_PROJECTILE_AMBIENT.get(), 1.0f, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+        this.resetAmbientSoundTime();
+    }
+
+    private void resetAmbientSoundTime() {
+        this.ambientSoundTime = -3;
     }
 
 }

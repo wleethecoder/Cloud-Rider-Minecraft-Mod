@@ -3,6 +3,7 @@ package com.leecrafts.cloudrider;
 import com.leecrafts.cloudrider.client.cloudrider.CloudRiderRenderer;
 import com.leecrafts.cloudrider.client.cloudsteed.CloudSteedRenderer;
 import com.leecrafts.cloudrider.client.lightningboltprojectile.LightningBoltProjectileRenderer;
+import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
@@ -15,7 +16,9 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CreativeModeTabEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -40,6 +43,8 @@ public class CloudRider
         ModEntityTypes.register(modEventBus);
 
         GeckoLib.initialize();
+
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CloudRiderCommonConfigs.SPEC, "cloudrider-common.toml");
 
 //        // Register the commonSetup method for modloading
 //        modEventBus.addListener(this::commonSetup);

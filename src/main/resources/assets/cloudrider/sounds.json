@@ -11,5 +11,48 @@
     "sounds": [
       "cloudrider:cloud_rider/vaporize_placeholder"
     ]
+  },
+  "entity.cloud_rider.shoot": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.shoot",
+    "sounds": [
+      "cloudrider:lightning_bolt_projectile/ambient1",
+      "cloudrider:lightning_bolt_projectile/ambient2",
+      "cloudrider:lightning_bolt_projectile/ambient3",
+      "cloudrider:lightning_bolt_projectile/ambient4"
+    ]
+  },
+  "entity.cloud_rider.charge": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.charge",
+    "sounds": [
+      "cloudrider:cloud_rider/charge1",
+      "cloudrider:cloud_rider/charge2",
+      "cloudrider:cloud_rider/charge3"
+    ]
+  },
+  "entity.cloud_rider.charged_shot": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.charged_shot",
+    "sounds": [
+      "cloudrider:cloud_rider/charged_shot1",
+      "cloudrider:cloud_rider/charged_shot2",
+      "cloudrider:cloud_rider/charged_shot3"
+    ]
+  },
+  "entity.lightning_bolt_projectile.ambient": {
+    "subtitle": "sounds.cloudrider.entity.lightning_bolt_projectile.ambient",
+    "sounds": [
+      "cloudrider:lightning_bolt_projectile/ambient1",
+      "cloudrider:lightning_bolt_projectile/ambient2",
+      "cloudrider:lightning_bolt_projectile/ambient3",
+      "cloudrider:lightning_bolt_projectile/ambient4"
+    ]
+  },
+  "entity.electric_area_effect_cloud.ambient": {
+    "subtitle": "sounds.cloudrider.entity.electric_area_effect_cloud.ambient",
+    "sounds": [
+      "cloudrider:electric_area_effect_cloud/ambient1",
+      "cloudrider:electric_area_effect_cloud/ambient2",
+      "cloudrider:electric_area_effect_cloud/ambient3",
+      "cloudrider:electric_area_effect_cloud/ambient4"
+    ]
   }
 }
