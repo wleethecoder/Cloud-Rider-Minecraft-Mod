@@ -2,13 +2,19 @@
   "type": "minecraft:entity",
   "pools": [
     {
-      "rolls": 1,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:killed_by_player"
+        }
+      ],
       "entries": [
         {
           "type": "minecraft:item",
           "name": "cloudrider:gray_cloud_steed"
         }
-      ]
+      ],
+      "rolls": 1
     }
   ]
 }

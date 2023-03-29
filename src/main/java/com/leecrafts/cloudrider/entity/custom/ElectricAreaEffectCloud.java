@@ -17,7 +17,7 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
 
     public int ambientSoundTime;
 
-    public ElectricAreaEffectCloud(EntityType<? extends AreaEffectCloud> pEntityType, Level pLevel) {
+    public ElectricAreaEffectCloud(EntityType<? extends ElectricAreaEffectCloud> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
         this.setParticle(ParticleTypes.ELECTRIC_SPARK);
         this.setRadius(2.5f);

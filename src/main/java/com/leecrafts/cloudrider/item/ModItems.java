@@ -4,8 +4,11 @@ import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
 import com.leecrafts.cloudrider.item.custom.CloudSteedItem;
+import com.leecrafts.cloudrider.item.custom.FoggySpongeItem;
+import com.leecrafts.cloudrider.item.custom.MistySpongeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -26,10 +29,16 @@ public class ModItems {
                     new Item.Properties()));
 
     public static final RegistryObject<Item> WHITE_CLOUD_STEED_ITEM = ITEMS.register("white_cloud_steed",
-            () -> new CloudSteedItem(CloudSteedEntity.Type.WHITE, (new Item.Properties()).stacksTo(1).rarity(Rarity.UNCOMMON)));
+            () -> new CloudSteedItem(CloudSteedEntity.Type.WHITE, (new Item.Properties()).stacksTo(1).rarity(Rarity.UNCOMMON).fireResistant()));
 
     public static final RegistryObject<Item> GRAY_CLOUD_STEED_ITEM = ITEMS.register("gray_cloud_steed",
-            () -> new CloudSteedItem(CloudSteedEntity.Type.GRAY, (new Item.Properties()).stacksTo(1).rarity(Rarity.RARE)));
+            () -> new CloudSteedItem(CloudSteedEntity.Type.GRAY, (new Item.Properties()).stacksTo(1).rarity(Rarity.RARE).fireResistant()));
+
+    public static final RegistryObject<Item> MISTY_SPONGE_ITEM = ITEMS.register("misty_sponge",
+            () -> new MistySpongeItem(Blocks.SPONGE, new Item.Properties()));
+
+    public static final RegistryObject<Item> FOGGY_SPONGE_ITEM = ITEMS.register("foggy_sponge",
+            () -> new FoggySpongeItem(Blocks.SPONGE, new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

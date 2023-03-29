@@ -9,6 +9,8 @@
   "item.cloudrider.gray_cloud_rider_spawn_egg": "Gray Cloud Rider Spawn Egg",
   "item.cloudrider.white_cloud_steed": "Cloud Steed",
   "item.cloudrider.gray_cloud_steed": "Gray Cloud Steed",
+  "item.cloudrider.misty_sponge": "Misty Sponge",
+  "item.cloudrider.foggy_sponge": "Foggy Sponge",
 
   "sounds.cloudrider.entity.cloud_rider.ambient": "Cloud Rider giggles",
   "sounds.cloudrider.entity.cloud_rider.vaporize": "Cloud Rider gets vaporized",
@@ -23,5 +25,9 @@
   "death.attack.electrocution": "%1$s was electrocuted to death",
   "death.attack.electrocution.player": "%1$s was electrocuted to death whilst trying to escape %2$s",
   "death.attack.vaporize": "%1$s was vaporized without a trace",
-  "death.attack.vaporize.player": "%1$s was vaporized without a trace whilst trying to escape %2$s"
+  "death.attack.vaporize.player": "%1$s was vaporized without a trace whilst trying to escape %2$s",
+
+  "advancements.end.place_cloud_rider_in_end.description": "Bring a Cloud Rider to the End dimension.",
+  "advancements.end.place_cloud_rider_in_end.title": "Where am I?"
+
 }

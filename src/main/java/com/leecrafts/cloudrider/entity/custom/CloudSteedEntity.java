@@ -1,5 +1,7 @@
 package com.leecrafts.cloudrider.entity.custom;
 
+import com.leecrafts.cloudrider.capability.ModCapabilities;
+import com.leecrafts.cloudrider.capability.lightning.LightningCap;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import net.minecraft.client.player.LocalPlayer;
@@ -47,7 +49,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     private final double MAX_SPEED_PER_SECOND = 20;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public CloudSteedEntity(EntityType<CloudSteedEntity> pEntityType, Level pLevel) {
+    public CloudSteedEntity(EntityType<? extends CloudSteedEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
     }
 
@@ -82,10 +84,9 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
             return false;
         }
         if (!this.level.isClientSide && !this.isRemoved()) {
-            // TODO new damagesource? aka lightning bolt from the steed?
-            // you don't want it to be destroyed by its own lightning bolts
             // TODO particles
             if (pSource == DamageSource.LAVA ||
+                    pSource == DamageSource.LIGHTNING_BOLT ||
                     (pSource.getDirectEntity() != null && pSource.getDirectEntity().getType() == ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get())) {
                 this.playSound(SoundEvents.FIRE_EXTINGUISH);
                 this.destroy();
@@ -148,6 +149,10 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
                         if (shouldStrike) {
                             LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(this.level);
                             if (lightningBolt != null) {
+                                lightningBolt.getCapability(ModCapabilities.LIGHTNING_CAPABILITY).ifPresent(iLightningCap -> {
+                                    LightningCap lightningCap = (LightningCap) iLightningCap;
+                                    lightningCap.fromGrayCloudSteed = true;
+                                });
                                 lightningBolt.moveTo(Vec3.atBottomCenterOf(blockPos.above()));
                                 lightningBolt.setCause(this.getControllingPassenger() instanceof ServerPlayer serverPlayer ? serverPlayer : null);
                                 this.level.addFreshEntity(lightningBolt);

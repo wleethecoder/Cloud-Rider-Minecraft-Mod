@@ -1,11 +1,9 @@
 package com.leecrafts.cloudrider.entity;
 
 import com.leecrafts.cloudrider.CloudRider;
-import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
-import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
-import com.leecrafts.cloudrider.entity.custom.ElectricAreaEffectCloud;
-import com.leecrafts.cloudrider.entity.custom.LightningBoltProjectileEntity;
+import com.leecrafts.cloudrider.entity.custom.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.eventbus.api.IEventBus;

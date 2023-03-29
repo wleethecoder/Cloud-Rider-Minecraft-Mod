@@ -3,6 +3,8 @@ package com.leecrafts.cloudrider.entity.custom;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.sound.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
@@ -38,8 +40,6 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.Objects;
-
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 import static net.minecraft.world.level.block.Blocks.*;
 
@@ -54,7 +54,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     private LivingEntity target;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public LightningBoltProjectileEntity(EntityType<? extends Projectile> pEntityType, Level pLevel) {
+    public LightningBoltProjectileEntity(EntityType<? extends LightningBoltProjectileEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
     }
 
@@ -71,7 +71,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     public void shoot(LivingEntity target, float velocity) {
         this.target = target;
         double xDir = this.target.getX() - this.getX();
-        double yDir = this.target.getY(0.5) - this.getY();
+        double yDir = this.target.getY(0.25) - this.getY();
         double zDir = this.target.getZ() - this.getZ();
         this.shoot(xDir, yDir, zDir, velocity, 0.0f);
     }
@@ -90,7 +90,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         Vec3 vec3 = this.getDeltaMovement();
         if (this.target != null && (this.isCharged || this.random.nextInt(6) == 0)) {
             double xDir = this.target.getX() - this.getX();
-            double yDir = this.target.getY(0.5) - this.getY();
+            double yDir = this.target.getY(0.25) - this.getY();
             double zDir = this.target.getZ() - this.getZ();
             Vec3 newVec3 = new Vec3(xDir, yDir, zDir);
             newVec3 = newVec3.normalize().scale(vec3.length());
@@ -107,12 +107,24 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.setDeltaMovement(vec3);
         this.setPos(xNew, yNew, zNew);
 
-        this.level.addAlwaysVisibleParticle(ParticleTypes.ELECTRIC_SPARK, this.getX(), this.getY(), this.getZ(), 0, 0, 0);
-        if (this.random.nextInt(3) < this.ambientSoundTime) {
-            this.playAmbientSound();
+//        if (this.level.isClientSide) {
+//            this.level.addAlwaysVisibleParticle(ParticleTypes.ELECTRIC_SPARK, this.getX(), this.getY(), this.getZ(), 0, 0, 0);
+//        }
+        if (!this.level.isClientSide) {
+            SimpleParticleType simpleParticleType = ParticleTypes.ELECTRIC_SPARK;
+            double particleSpeed = 0.7;
+            if (this.isCharged) {
+                simpleParticleType = ParticleTypes.END_ROD;
+                particleSpeed = 0.05;
+            }
+            ((ServerLevel) this.level).sendParticles(
+                    simpleParticleType, this.getX(), this.getY(), this.getZ(),
+                    5, 0, 0, 0, particleSpeed
+            );
         }
-        else {
-            this.ambientSoundTime++;
+
+        if (this.random.nextInt(3) < this.ambientSoundTime++) {
+            this.playAmbientSound();
         }
     }
 
@@ -122,7 +134,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         Entity shooter = this.getOwner();
         Entity target = pResult.getEntity();
         float damage;
-        if (!this.level.isClientSide && (shooter == null || !target.is(shooter))) {
+        if (!this.level.isClientSide) {
             DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
                     new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
@@ -226,9 +238,23 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     protected void onHit(@NotNull HitResult pResult) {
         super.onHit(pResult);
         if (!this.level.isClientSide) {
-            this.playSound(SoundEvents.GENERIC_EXPLODE, 1.0f, 1.0f);
+            float volume = 1.0f;
+            if (this.isCharged) {
+                ((ServerLevel) this.level).sendParticles(
+                        ParticleTypes.END_ROD, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z,
+                        150, 0, 0, 0, 0.7
+                );
+                volume = 10.0f;
+            }
+            this.playSound(SoundEvents.GENERIC_EXPLODE, volume, 1.0f);
             this.discard();
         }
+    }
+
+    @Override
+    protected boolean canHitEntity(@NotNull Entity pTarget) {
+        Entity shooter = this.getOwner();
+        return super.canHitEntity(pTarget) && (shooter == null || !pTarget.is(shooter));
     }
 
     @Override

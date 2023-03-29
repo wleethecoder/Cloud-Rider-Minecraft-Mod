@@ -1,0 +1,39 @@
+{
+  "parent": "minecraft:end/root",
+  "criteria": {
+    "placed_cloud_rider_in_end": {
+      "conditions": {
+        "item": {
+          "items": [
+            "cloudrider:misty_sponge",
+            "cloudrider:foggy_sponge"
+          ]
+        },
+        "location": {
+          "dimension": "minecraft:end"
+        }
+      },
+      "trigger": "minecraft:item_used_on_block"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancements.end.place_cloud_rider_in_end.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cloudrider:white_cloud_steed"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.end.place_cloud_rider_in_end.title"
+    }
+  },
+  "requirements": [
+    [
+      "placed_cloud_rider_in_end"
+    ]
+  ]
+}

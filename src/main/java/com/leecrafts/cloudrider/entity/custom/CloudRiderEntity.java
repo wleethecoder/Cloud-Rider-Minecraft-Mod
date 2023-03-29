@@ -6,17 +6,23 @@ import com.leecrafts.cloudrider.capability.cloudriderentity.CloudRiderCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCap;
 import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
+import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.stats.Stats;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -34,6 +40,9 @@ import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NaturalSpawner;
@@ -65,8 +74,9 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     public static final float PROJECTILE_SPEED_PER_SECOND = 50.0f;
     public static final float LOOK_RANGE = 32.0f;
     public static final float MIN_CHASE_DISTANCE = 16.0f;
-    private static final EntityDataAccessor<Boolean> DATA_IS_ATTACKING = SynchedEntityData.defineId(CloudRiderEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_TARGET_ID = SynchedEntityData.defineId(CloudRiderEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_IS_CHARGING = SynchedEntityData.defineId(CloudRiderEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_IS_CHARGE_COOLDOWN = SynchedEntityData.defineId(CloudRiderEntity.class, EntityDataSerializers.BOOLEAN);
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private static final RawAnimation IDLE = RawAnimation.begin().thenPlay("animation.cloud_rider.idle");
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay("animation.cloud_rider.attack");
@@ -74,11 +84,13 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     private static final ResourceLocation LOOT_TABLE_WHITE = new ResourceLocation(CloudRider.MODID, "entities/white_cloud_rider");
     private static final ResourceLocation LOOT_TABLE_GRAY = new ResourceLocation(CloudRider.MODID, "entities/gray_cloud_rider");
     public static final DamageSource VAPORIZE = new DamageSource("vaporize");
+    public int chargeAnimationTick;
 
     public CloudRiderEntity(EntityType<? extends CloudRiderEntity> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
         this.xpReward = XP_REWARD_LARGE;
         this.moveControl = new CloudRiderEntity.CloudRiderMoveControl(this);
+        this.chargeAnimationTick = 0;
     }
 
     public static AttributeSupplier setAttributes() {
@@ -127,31 +139,103 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
 
             this.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
                 CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
-                boolean persistenceChanged = this.isPersistenceRequired() == cloudRiderCap.wasNotPersistent;
-                if (persistenceChanged) {
                     if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
                         player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
                             PlayerCap playerCap = (PlayerCap) iPlayerCap;
-                            if (this.isPersistenceRequired()) {
-                                if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
-                                cloudRiderCap.wasNotPersistent = false;
-                            }
-                            else if (!this.isPersistenceRequired()) {
-                                playerCap.numCloudRiders++;
-                                cloudRiderCap.wasNotPersistent = true;
+                            boolean persistenceChanged = this.isPersistenceRequired() != cloudRiderCap.wasPersistent;
+                            if (persistenceChanged) {
+                                if (this.isPersistenceRequired()) {
+                                    if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
+                                    cloudRiderCap.wasPersistent = true;
+                                } else if (!this.isPersistenceRequired()) {
+                                    playerCap.numCloudRiders++;
+                                    cloudRiderCap.wasPersistent = false;
+                                }
                             }
                         });
                     }
-                }
             });
+
+//            if (this.getTarget() instanceof EnderDragon) {
+//                if (CloudRider.ENTITY_ATTACK_ENTITY != null) {
+//                    for (ServerPlayer serverPlayer : this.level.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(100))) {
+//
+//                    }
+//                }
+//            }
         }
+        else {
+            if (this.isCharging() && this.chargeAnimationTick < 60) {
+                Vec3 vec3 = this.getDeltaMovement();
+                Vec3 viewVector = this.getViewVector(1);
+                double radius = 1 - this.chargeAnimationTick / 60.0;
+                for (int i = 0; i < 20; i++) {
+                    Vec3 randomVector = new Vec3(1, 1, 1);
+                    randomVector = randomVector.xRot(this.random.nextFloat() * 2 * Mth.PI)
+                            .yRot(this.random.nextFloat() * 2 * Mth.PI)
+                            .zRot(this.random.nextFloat() * 2 * Mth.PI);
+                    Vec3 randomVectorSpark = randomVector.normalize().scale(radius);
+                    this.level.addAlwaysVisibleParticle(
+                            ParticleTypes.ELECTRIC_SPARK,
+                            this.getX() + viewVector.x * 0.6 + randomVectorSpark.x,
+                            this.getY(0.5) + randomVectorSpark.y,
+                            this.getZ() + viewVector.z * 0.6 + randomVectorSpark.z,
+                            vec3.x, vec3.y, vec3.z
+                    );
+                    if (i == 0) {
+                        this.level.addAlwaysVisibleParticle(
+                                ParticleTypes.END_ROD,
+                                this.getX() + viewVector.x * 0.6 + randomVector.x,
+                                this.getY(0.5) + randomVector.y,
+                                this.getZ() + viewVector.z * 0.6 + randomVector.z,
+                                vec3.x - randomVector.x * 0.075,
+                                vec3.y - randomVector.y * 0.075,
+                                vec3.z - randomVector.z * 0.075
+                        );
+                    }
+                }
+                this.chargeAnimationTick++;
+            }
+            else {
+                this.chargeAnimationTick = 0;
+            }
+        }
+
+    }
+
+    @Override
+    protected @NotNull InteractionResult mobInteract(@NotNull Player pPlayer, @NotNull InteractionHand pHand) {
+        ItemStack emptySpongeItemStack = pPlayer.getItemInHand(pHand);
+        if (emptySpongeItemStack.getItem() == Items.SPONGE && this.isAlive() && this.getTargetId() != pPlayer.getId()) {
+            pPlayer.awardStat(Stats.ITEM_USED.get(emptySpongeItemStack.getItem()));
+            // TODO sound
+            this.playSound(SoundEvents.ARMOR_EQUIP_ELYTRA);
+            ItemStack mistySpongeItemStack = this.getSpongeItemStack();
+            if (this.hasCustomName()) {
+                mistySpongeItemStack.setHoverName(this.getCustomName());
+            }
+            ItemStack resultingItemStack = ItemUtils.createFilledResult(emptySpongeItemStack, pPlayer, mistySpongeItemStack);
+            pPlayer.setItemInHand(pHand, resultingItemStack);
+            this.discard();
+            return InteractionResult.sidedSuccess(this.level.isClientSide);
+        }
+        else {
+            return super.mobInteract(pPlayer, pHand);
+        }
+    }
+
+    private ItemStack getSpongeItemStack() {
+        return new ItemStack(this.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get() ?
+                ModItems.MISTY_SPONGE_ITEM.get() :
+                ModItems.FOGGY_SPONGE_ITEM.get());
     }
 
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(DATA_IS_ATTACKING, false);
+        this.entityData.define(DATA_TARGET_ID, -1);
         this.entityData.define(DATA_IS_CHARGING, false);
+        this.entityData.define(DATA_IS_CHARGE_COOLDOWN, false);
     }
 
     @Override
@@ -184,11 +268,27 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         super.remove(removalReason);
     }
 
+    // Experience orbs float
+    @Override
+    protected void dropExperience() {
+        if (this.level instanceof ServerLevel && !this.wasExperienceConsumed() && (this.isAlwaysExperienceDropper() || this.lastHurtByPlayerTime > 0 && this.shouldDropExperience() && this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT))) {
+            int reward = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(this, this.lastHurtByPlayer, this.getExperienceReward());
+            while (reward > 0) {
+                int i = ExperienceOrb.getExperienceValue(reward);
+                reward -= i;
+                ExperienceOrb experienceOrb = new ExperienceOrb(this.level, this.getX() + this.random.nextDouble() - 0.5, this.getY(), this.getZ() + this.random.nextDouble() - 0.5, i);
+                experienceOrb.setNoGravity(true);
+                experienceOrb.setDeltaMovement(Vec3.ZERO);
+                this.level.addFreshEntity(experienceOrb);
+            }
+        }
+    }
+
     private <E extends GeoAnimatable> PlayState predicate(AnimationState<E> event) {
-        if (!this.isAttacking()) {
+        if (this.getTargetId() == -1) {
             event.getController().setAnimation(IDLE);
         }
-        else if (this.isCharging()) {
+        else if (this.isCharging() || this.isChargeCooldown()) {
             event.getController().setAnimation(CHARGE);
         }
         else {
@@ -247,12 +347,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         return true;
     }
 
-    public boolean isAttacking() {
-        return this.entityData.get(DATA_IS_ATTACKING);
+    public int getTargetId() {
+        return this.entityData.get(DATA_TARGET_ID);
     }
 
-    public void setAttacking(boolean isAttacking) {
-        this.entityData.set(DATA_IS_ATTACKING, isAttacking);
+    public void setTargetId(int targetId) {
+        this.entityData.set(DATA_TARGET_ID, targetId);
     }
 
     public boolean isCharging() {
@@ -261,6 +361,14 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
 
     public void setCharging(boolean isCharging) {
         this.entityData.set(DATA_IS_CHARGING, isCharging);
+    }
+
+    public boolean isChargeCooldown() {
+        return this.entityData.get(DATA_IS_CHARGE_COOLDOWN);
+    }
+
+    public void setChargeCooldown(boolean isChargeCooldown) {
+        this.entityData.set(DATA_IS_CHARGE_COOLDOWN, isChargeCooldown);
     }
 
     public static boolean isValidSpawn(BlockPos blockPos, ServerLevel serverLevel) {
@@ -275,12 +383,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         return true;
     }
 
-    public static double getTargetLevel(LivingEntity livingEntity) {
-        return livingEntity.level.dimension() == Level.OVERWORLD ? CLOUD_LEVEL : TARGET_LEVEL_END;
+    public static double getTargetLevel(Level level) {
+        return level.dimension() == Level.OVERWORLD ? CLOUD_LEVEL : TARGET_LEVEL_END;
     }
 
-    public static double getLowestLevel(LivingEntity livingEntity) {
-        return livingEntity.level.dimension() == Level.OVERWORLD ? LOWEST_LEVEL_OVERWORLD : LOWEST_LEVEL_END;
+    public static double getLowestLevel(Level level) {
+        return level.dimension() == Level.OVERWORLD ? LOWEST_LEVEL_OVERWORLD : LOWEST_LEVEL_END;
     }
 
     private boolean canAttackMob(LivingEntity mob) {
@@ -294,8 +402,8 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     private boolean canAttackPlayer(LivingEntity player) {
         return CloudRiderCommonConfigs.CLOUD_RIDER_IS_HOSTILE.get() &&
                 player.level.dimension() == Level.OVERWORLD &&
-                (player.getVehicle() == null || player.getVehicle().getType() != ModEntityTypes.CLOUD_STEED.get()) &&
-                (player.getActiveEffectsMap() == null || !player.hasEffect(MobEffects.INVISIBILITY));
+                (player.getVehicle() == null || player.getVehicle().getType() != ModEntityTypes.CLOUD_STEED.get());
+//                (player.getActiveEffectsMap() == null || !player.hasEffect(MobEffects.INVISIBILITY));
     }
 
     private void shootTarget(LivingEntity shooter, LivingEntity target, float damage, boolean isCharged) {
@@ -306,6 +414,13 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                 isCharged);
         projectile.shoot(target, PROJECTILE_SPEED_PER_SECOND / TICKS_PER_SECOND);
         shooter.level.addFreshEntity(projectile);
+        SoundEvent soundEvent = ModSounds.CLOUD_RIDER_SHOOT.get();
+        float volume = 1.0f;
+        if (isCharged) {
+            soundEvent = ModSounds.CLOUD_RIDER_CHARGED_SHOT.get();
+            volume = 10.0f;
+        }
+        shooter.playSound(soundEvent, volume, 1.0f);
     }
 
     static class CloudRiderMoveControl extends MoveControl {
@@ -320,9 +435,11 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         @Override
         public void tick() {
             if (this.operation == Operation.MOVE_TO) {
-                Vec3 vec3 = new Vec3(this.getWantedX() - this.cloudRiderEntity.getX(),
+                Vec3 vec3 = new Vec3(
+                        this.getWantedX() - this.cloudRiderEntity.getX(),
                         this.getWantedY() - this.cloudRiderEntity.getY(),
-                        this.getWantedZ() - this.cloudRiderEntity.getZ());
+                        this.getWantedZ() - this.cloudRiderEntity.getZ()
+                );
                 double travelDistance = vec3.length();
                 double offsetDistance = 3;
                 double slowdownVelocity = (travelDistance - offsetDistance) * 4;
@@ -347,15 +464,13 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
 
         public int cooldown;
         public int chargePhaseTimer;
-        public boolean postCharge;
-        public int postChargeCooldown;
         public float damage;
 
         private final CloudRiderEntity cloudRiderEntity;
 
         public ChaseTargetGoal(CloudRiderEntity cloudRiderEntity) {
             this.cloudRiderEntity = cloudRiderEntity;
-            this.setFlags(EnumSet.of(Flag.TARGET));
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
             this.damage = ATTACK_DAMAGE;
             // gray cloud riders do 33.3% more damage
             if (this.cloudRiderEntity.getType() == ModEntityTypes.GRAY_CLOUD_RIDER.get()) {
@@ -372,15 +487,18 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         public void start() {
             this.cooldown = 0;
             this.chargePhaseTimer = 0;
-            this.postCharge = false;
-            this.postChargeCooldown = 0;
-            this.cloudRiderEntity.setAttacking(true);
+            if (this.cloudRiderEntity.getTarget() != null) {
+                this.cloudRiderEntity.setTargetId(this.cloudRiderEntity.getTarget().getId());
+            }
         }
 
         @Override
         public void stop() {
-            this.cloudRiderEntity.setAttacking(false);
+            this.cloudRiderEntity.setTargetId(-1);
             this.cloudRiderEntity.setCharging(false);
+            this.cloudRiderEntity.setChargeCooldown(false);
+
+            // Resets movement goal
             this.cloudRiderEntity.getMoveControl().setWantedPosition(this.cloudRiderEntity.getX(), this.cloudRiderEntity.getY(), this.cloudRiderEntity.getZ(), 1);
         }
 
@@ -394,19 +512,18 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                 if (target.distanceTo(this.cloudRiderEntity) > MIN_CHASE_DISTANCE) {
                     this.cloudRiderEntity.getMoveControl().setWantedPosition(
                             target.getX(),
-                            Math.max(target.getY(), getLowestLevel(this.cloudRiderEntity)),
+                            Math.max(target.getY(), getLowestLevel(this.cloudRiderEntity.level)),
                             target.getZ(),
                             1
                     );
                 }
-                if (!this.cloudRiderEntity.isCharging()) {
+                if (!this.cloudRiderEntity.isCharging() && !this.cloudRiderEntity.isChargeCooldown()) {
                     if (this.cooldown++ >= SECONDS_PER_ATTACK * TICKS_PER_SECOND) {
                         this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, target, this.damage, false);
-                        this.cloudRiderEntity.playSound(ModSounds.CLOUD_RIDER_SHOOT.get());
                         this.cooldown = 0;
                     }
 
-                    if (this.chargePhaseTimer++ >= 10 * TICKS_PER_SECOND) {
+                    if (this.chargePhaseTimer++ >= 7 * TICKS_PER_SECOND) {
                         this.cloudRiderEntity.setCharging(true);
                         this.chargePhaseTimer = 0;
                         this.cooldown = 0;
@@ -414,18 +531,17 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                     }
                 }
                 else {
-                    if (!this.postCharge) {
+                    if (!this.cloudRiderEntity.isChargeCooldown()) {
                         if (this.cooldown++ >= 3 * TICKS_PER_SECOND) {
-                            this.postCharge = true;
+                            this.cloudRiderEntity.setCharging(false);
+                            this.cloudRiderEntity.setChargeCooldown(true);
                             this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, target, 3 * 2 * this.damage, true);
-                            this.cloudRiderEntity.playSound(ModSounds.CLOUD_RIDER_CHARGED_SHOT.get(), 10.0f, 1.0f);
                             this.cooldown = 0;
                         }
                     }
                     else {
                         if (this.cooldown++ >= 1 * TICKS_PER_SECOND) {
-                            this.cloudRiderEntity.setCharging(false);
-                            this.postCharge = false;
+                            this.cloudRiderEntity.setChargeCooldown(false);
                             this.cooldown = 0;
                         }
                     }
@@ -455,7 +571,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         @Override
         public boolean canUse() {
             double y = this.cloudRiderEntity.getY();
-            double targetLevel = getTargetLevel(this.cloudRiderEntity);
+            double targetLevel = getTargetLevel(this.cloudRiderEntity.level);
             return this.cloudRiderEntity.getTarget() == null && (y > targetLevel + 4 || y < targetLevel - 4);
         }
 
@@ -463,7 +579,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         public void start() {
             double x = this.cloudRiderEntity.getX();
             double z = this.cloudRiderEntity.getZ();
-            this.cloudRiderEntity.getMoveControl().setWantedPosition(x, getTargetLevel(this.cloudRiderEntity), z, 1);
+            this.cloudRiderEntity.getMoveControl().setWantedPosition(x, getTargetLevel(this.cloudRiderEntity.level), z, 1);
 //            System.out.println("[" + this.cloudRiderEntity.getMoveControl().getWantedX() + ", " +
 //                    this.cloudRiderEntity.getMoveControl().getWantedY() + ", " +
 //                    this.cloudRiderEntity.getMoveControl().getWantedZ() + "]");
@@ -499,9 +615,8 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                     return false;
                 } else {
                     // if it cannot see target, it will still retaliate with a single shot
-                    if (livingentity.distanceTo(this.cloudRiderEntity) > LOOK_RANGE) {
-                        this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, livingentity, this.damage, true);
-                        this.cloudRiderEntity.playSound(ModSounds.CLOUD_RIDER_SHOOT.get());
+                    if (livingentity.distanceTo(this.cloudRiderEntity) > LOOK_RANGE && (!(livingentity instanceof Player player) || !player.isCreative())) {
+                        this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, livingentity, this.damage, false);
                     }
                     return this.canAttack(livingentity, HURT_BY_TARGETING);
                 }

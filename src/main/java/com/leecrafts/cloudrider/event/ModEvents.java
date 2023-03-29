@@ -5,12 +5,16 @@ import com.leecrafts.cloudrider.capability.ModCapabilities;
 import com.leecrafts.cloudrider.capability.cloudriderentity.CloudRiderCap;
 import com.leecrafts.cloudrider.capability.cloudriderentity.CloudRiderCapProvider;
 import com.leecrafts.cloudrider.capability.cloudriderentity.ICloudRiderCap;
+import com.leecrafts.cloudrider.capability.lightning.ILightningCap;
+import com.leecrafts.cloudrider.capability.lightning.LightningCap;
+import com.leecrafts.cloudrider.capability.lightning.LightningCapProvider;
 import com.leecrafts.cloudrider.capability.player.IPlayerCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCapProvider;
 import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
+import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
 import com.leecrafts.cloudrider.item.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -20,16 +24,19 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -47,6 +54,7 @@ public class ModEvents {
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
             event.register(IPlayerCap.class);
             event.register(ICloudRiderCap.class);
+            event.register(ILightningCap.class);
         }
 
         @SubscribeEvent
@@ -63,6 +71,15 @@ public class ModEvents {
                 CloudRiderCapProvider cloudRiderCapProvider = new CloudRiderCapProvider();
                 event.addCapability(new ResourceLocation(CloudRider.MODID, "player_id"), cloudRiderCapProvider);
                 event.addListener(cloudRiderCapProvider::invalidate);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onAttachCapabilitiesEventLightning(AttachCapabilitiesEvent<Entity> event) {
+            if (event.getObject() instanceof LightningBolt lightningBolt && !lightningBolt.getCommandSenderWorld().isClientSide) {
+                LightningCapProvider lightningCapProvider = new LightningCapProvider();
+                event.addCapability(new ResourceLocation(CloudRider.MODID, "from_gray_cloud_steed"), lightningCapProvider);
+                event.addListener(lightningCapProvider::invalidate);
             }
         }
 
@@ -138,6 +155,27 @@ public class ModEvents {
                     mutableComponent = mutableComponent.append(itemEntity.getName());
                     itemEntity.setCustomName(mutableComponent);
                     itemEntity.setCustomNameVisible(true);
+                }
+            }
+        }
+
+        @SubscribeEvent
+        public static void lightningStrikeEvent(EntityStruckByLightningEvent event) {
+            if (!event.getEntity().level.isClientSide) {
+                if (event.getEntity() instanceof ItemEntity itemEntity) {
+                    if (itemEntity.getItem().is(ModItems.WHITE_CLOUD_STEED_ITEM.get()) ||
+                            itemEntity.getItem().is(ModItems.GRAY_CLOUD_STEED_ITEM.get())) {
+                        event.setCanceled(true);
+                    }
+                }
+                else if (event.getEntity() instanceof CloudSteedEntity cloudSteedEntity && cloudSteedEntity.hasControllingPassenger()) {
+                    LightningBolt lightningBolt = event.getLightning();
+                    lightningBolt.getCapability(ModCapabilities.LIGHTNING_CAPABILITY).ifPresent(iLightningCap -> {
+                        LightningCap lightningCap = (LightningCap) iLightningCap;
+                        if (lightningCap.fromGrayCloudSteed) {
+                            event.setCanceled(true);
+                        }
+                    });
                 }
             }
         }

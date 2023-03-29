@@ -146,7 +146,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    implementation fg.deobf('software.bernie.geckolib:geckolib-forge-1.19.3:4.0.4')
+    implementation fg.deobf('software.bernie.geckolib:geckolib-forge-1.19.3:4.0.6')
 
 }
 
