@@ -119,7 +119,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
             }
             ((ServerLevel) this.level).sendParticles(
                     simpleParticleType, this.getX(), this.getY(), this.getZ(),
-                    5, 0, 0, 0, particleSpeed
+                    3, 0, 0, 0, particleSpeed
             );
         }
 
@@ -130,7 +130,6 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
 
     @Override
     protected void onHitEntity(@NotNull EntityHitResult pResult) {
-//        super.onHitEntity(pResult);
         Entity shooter = this.getOwner();
         Entity target = pResult.getEntity();
         float damage;

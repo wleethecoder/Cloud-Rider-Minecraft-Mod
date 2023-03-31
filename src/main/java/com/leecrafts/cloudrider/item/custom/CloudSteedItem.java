@@ -27,7 +27,7 @@ public class CloudSteedItem extends Item {
         ItemStack itemStack = pPlayer.getItemInHand(pUsedHand);
         HitResult hitresult = getPlayerPOVHitResult(pLevel, pPlayer, ClipContext.Fluid.ANY);
 
-        CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ(), pLevel);
+        CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(pPlayer.getX(), pPlayer.getY() + 1e-5, pPlayer.getZ(), pLevel);
         cloudSteedEntity.setVariant(this.type);
         cloudSteedEntity.setYRot(pPlayer.getYRot());
 

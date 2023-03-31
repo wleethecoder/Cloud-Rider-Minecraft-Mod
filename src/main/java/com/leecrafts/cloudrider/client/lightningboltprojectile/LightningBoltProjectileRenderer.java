@@ -21,17 +21,6 @@ public class LightningBoltProjectileRenderer extends GeoEntityRenderer<Lightning
     }
 
     @Override
-    public @NotNull ResourceLocation getTextureLocation(@NotNull LightningBoltProjectileEntity instance) {
-        int mod4 = instance.tickCount % 4;
-        if (mod4 == 0 || mod4 == 1){
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture1.png");
-        }
-        else {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture2.png");
-        }
-    }
-
-    @Override
     public void actuallyRender(PoseStack poseStack, LightningBoltProjectileEntity animatable, BakedGeoModel model, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
         poseStack.mulPose(Axis.YP.rotationDegrees(animatable.getYRot()));
         poseStack.mulPose(Axis.XP.rotationDegrees(-animatable.getXRot()));

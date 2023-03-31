@@ -20,7 +20,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -84,10 +83,10 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
             return false;
         }
         if (!this.level.isClientSide && !this.isRemoved()) {
-            // TODO particles
             if (pSource == DamageSource.LAVA ||
                     pSource == DamageSource.LIGHTNING_BOLT ||
                     (pSource.getDirectEntity() != null && pSource.getDirectEntity().getType() == ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get())) {
+                CloudRiderEntity.vaporizeParticles(this);
                 this.playSound(SoundEvents.FIRE_EXTINGUISH);
                 this.destroy();
                 return true;
@@ -118,7 +117,15 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         if (this.level.dimensionType().ultraWarm()) {
             this.hurt(DamageSource.LAVA, 0);
         }
+        if (this.level.isClientSide && this.getVariant() == Type.GRAY) {
+            CloudRiderEntity.grayCloudParticles(this);
+        }
         if (this.isControlledByLocalInstance()) {
+
+            if (this.isOnGround()) {
+//                System.out.println("preventing clipping ☝️🤓");
+                this.setPos(this.getX(), this.getY() + 1e-5, this.getZ());
+            }
 
             // This fixes the bug that occasionally makes the steed "disappear" when the passenger dismounts
             this.syncPacketPositionCodec(this.getX(), this.getY(), this.getZ());
@@ -141,7 +148,6 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
                         boolean shouldStrike = false;
                         for (LivingEntity livingEntity : list) {
                             if (livingEntity instanceof Enemy ||
-                                    livingEntity instanceof Monster ||
                                     (passenger.getLastHurtByMob() != null && passenger.getLastHurtByMob().is(livingEntity))) {
                                 shouldStrike = true;
                             }
@@ -343,7 +349,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         return CloudSteedEntity.Type.byId(this.entityData.get(DATA_ID_TYPE));
     }
 
-    public static enum Type implements StringRepresentable {
+    public enum Type implements StringRepresentable {
         WHITE(0, "white"),
         GRAY(1, "gray");
 

@@ -30,8 +30,10 @@ public class AbstractMistySpongeItem extends BlockItem {
                         ModEntityTypes.GRAY_CLOUD_RIDER.get();
                 CloudRiderEntity cloudRiderEntity = cloudRiderVariant.spawn(serverLevel, pContext.getClickedPos().above(), MobSpawnType.MOB_SUMMONED);
                 ItemStack itemStack = pContext.getItemInHand();
-                if (cloudRiderEntity != null && itemStack.hasCustomHoverName()) {
-                    cloudRiderEntity.setCustomName(itemStack.getHoverName());
+                if (cloudRiderEntity != null) {
+                    if (itemStack.hasCustomHoverName()) {
+                        cloudRiderEntity.setCustomName(itemStack.getHoverName());
+                    }
                     cloudRiderEntity.setPersistenceRequired();
                 }
             }

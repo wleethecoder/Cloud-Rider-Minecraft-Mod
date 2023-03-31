@@ -1,0 +1,39 @@
+{
+  "parent": "cloudrider:place_cloud_rider_in_end",
+  "criteria": {
+    "targeted_dragon": {
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "minecraft:ender_dragon"
+            }
+          }
+        ]
+      },
+      "trigger": "cloudrider:entity_target_entity"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancements.end.cloud_rider_target_dragon.description"
+    },
+    "frame": "challenge",
+    "hidden": true,
+    "icon": {
+      "item": "cloudrider:white_cloud_steed"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.end.cloud_rider_target_dragon.title"
+    }
+  },
+  "requirements": [
+    [
+      "targeted_dragon"
+    ]
+  ]
+}

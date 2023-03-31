@@ -6,6 +6,24 @@
       "cloudrider:cloud_rider/ambient2_placeholder"
     ]
   },
+  "entity.cloud_rider.hurt": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.hurt",
+    "sounds": [
+      {
+        "name": "entity.player.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "entity.cloud_rider.death": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.death",
+    "sounds": [
+      {
+        "name": "entity.creeper.death",
+        "type": "event"
+      }
+    ]
+  },
   "entity.cloud_rider.vaporize": {
     "subtitle": "sounds.cloudrider.entity.cloud_rider.vaporize",
     "sounds": [
@@ -35,6 +53,24 @@
       "cloudrider:cloud_rider/charged_shot1",
       "cloudrider:cloud_rider/charged_shot2",
       "cloudrider:cloud_rider/charged_shot3"
+    ]
+  },
+  "entity.cloud_rider.converted_to_gray": {
+    "subtitle": "sounds.cloudrider.entity.cloud_rider.converted_to_gray",
+    "sounds": [
+      {
+        "name": "block.beacon.power_select",
+        "type": "event"
+      }
+    ]
+  },
+  "item.sponge.fill_cloud_rider": {
+    "subtitle": "sounds.cloudrider.item.sponge.fill_cloud_rider",
+    "sounds": [
+      {
+        "name": "item.armor.equip_elytra",
+        "type": "event"
+      }
     ]
   },
   "entity.lightning_bolt_projectile.ambient": {

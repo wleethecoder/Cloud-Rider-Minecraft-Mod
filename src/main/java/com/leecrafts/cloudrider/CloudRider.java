@@ -4,7 +4,8 @@ import com.leecrafts.cloudrider.client.cloudrider.CloudRiderRenderer;
 import com.leecrafts.cloudrider.client.cloudsteed.CloudSteedRenderer;
 import com.leecrafts.cloudrider.client.lightningboltprojectile.LightningBoltProjectileRenderer;
 import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
-import com.leecrafts.cloudrider.criterion.custom.EntityAttackEntityTrigger;
+import com.leecrafts.cloudrider.criterion.ModCriteria;
+import com.leecrafts.cloudrider.criterion.custom.EntityTargetEntityTrigger;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
@@ -35,8 +36,6 @@ public class CloudRider
     public static final String MODID = "cloudrider";
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
-//    public static EntityAttackEntityTrigger ENTITY_ATTACK_ENTITY;
-
     public CloudRider()
     {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -50,8 +49,8 @@ public class CloudRider
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CloudRiderCommonConfigs.SPEC, "cloudrider-common.toml");
 
-        // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
+//        // Register the commonSetup method for modloading
+//        modEventBus.addListener(this::commonSetup);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
@@ -60,12 +59,9 @@ public class CloudRider
         modEventBus.addListener(this::addCreative);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event)
-    {
-//        event.enqueueWork(() -> {
-//            ENTITY_ATTACK_ENTITY = CriteriaTriggers.register(new EntityAttackEntityTrigger());
-//        });
-    }
+//    private void commonSetup(final FMLCommonSetupEvent event)
+//    {
+//    }
 
     private void addCreative(CreativeModeTabEvent.BuildContents event)
     {

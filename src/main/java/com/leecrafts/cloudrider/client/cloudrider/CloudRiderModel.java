@@ -9,6 +9,9 @@ import software.bernie.geckolib.model.GeoModel;
 
 public class CloudRiderModel extends DefaultedEntityGeoModel<CloudRiderEntity> {
 
+    private static final ResourceLocation WHITE_CLOUD_RIDER_TEXUTRE = new ResourceLocation(CloudRider.MODID, "textures/entity/white_cloud_rider_texture.png");
+    private static final ResourceLocation GRAY_CLOUD_RIDER_TEXUTRE = new ResourceLocation(CloudRider.MODID, "textures/entity/gray_cloud_rider_texture.png");
+
     public CloudRiderModel(ResourceLocation assetSubpath) {
         super(assetSubpath, true);
     }
@@ -21,11 +24,9 @@ public class CloudRiderModel extends DefaultedEntityGeoModel<CloudRiderEntity> {
     @Override
     public ResourceLocation getTextureResource(CloudRiderEntity animatable) {
         if (animatable.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get()) {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/white_cloud_rider_texture.png");
+            return WHITE_CLOUD_RIDER_TEXUTRE;
         }
-        else {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/gray_cloud_rider_texture.png");
-        }
+        return GRAY_CLOUD_RIDER_TEXUTRE;
     }
 
     @Override

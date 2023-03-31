@@ -16,14 +16,4 @@ public class CloudRiderRenderer extends GeoEntityRenderer<CloudRiderEntity> {
         this.shadowRadius = 0.75f;
     }
 
-    @Override
-    public @NotNull ResourceLocation getTextureLocation(@NotNull CloudRiderEntity animatable) {
-        if (animatable.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get()) {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/white_cloud_rider_texture.png");
-        }
-        else {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/gray_cloud_rider_texture.png");
-        }
-    }
-
 }

@@ -10,7 +10,7 @@
           ]
         },
         "location": {
-          "dimension": "minecraft:end"
+          "dimension": "minecraft:the_end"
         }
       },
       "trigger": "minecraft:item_used_on_block"

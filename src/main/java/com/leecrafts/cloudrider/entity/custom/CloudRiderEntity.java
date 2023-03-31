@@ -5,6 +5,7 @@ import com.leecrafts.cloudrider.capability.ModCapabilities;
 import com.leecrafts.cloudrider.capability.cloudriderentity.CloudRiderCap;
 import com.leecrafts.cloudrider.capability.player.PlayerCap;
 import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
+import com.leecrafts.cloudrider.criterion.ModCriteria;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
@@ -59,10 +60,23 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.EnumSet;
+import java.util.Random;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
 public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy {
+
+    // The cloud rider is a mob that loves mischief and violence. It'll pick fights with players and anything that flies or has wings.
+    // This mob is meant to challenge players late game, so don't try to fight it with iron armor!
+    // Make sure you have fully enchanted diamond/netherite armor and bow. And of course an elytra. Golden apples may come in handy as well.
+
+    // Cloud riders attack by rapidly hurling lightning bolts. Keep in mind that certain substances in Minecraft can conduct electricity.
+    // Cloud riders can travel as fast as 45 m/s, so think twice before flying away when they are attacking you.
+
+    // Their drops, the cloud steed, are rewarding. If a player rides a cloud steed, cloud riders become neutral.
+
+    // The player can mop up cloud riders with a sponge--if they are not attacking the player.
+    // Where would you want to take them? What places (dimensions, biomes, caves, etc.) have mobs that cloud riders would be eager to challenge?
 
     public static final int CLOUD_LEVEL = 192;
     public static final int LOWEST_LEVEL_OVERWORLD = 112;
@@ -93,10 +107,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         this.chargeAnimationTick = 0;
     }
 
+    // 30 health, and 32 follow range
     public static AttributeSupplier setAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 30).add(Attributes.FOLLOW_RANGE, LOOK_RANGE).build();
     }
 
+    // If they are not attacking, they will go to the y-level where there are clouds.
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(3, new CloudRiderEntity.ChaseTargetGoal(this));
@@ -113,11 +129,14 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
     public void tick() {
         super.tick();
         if (!this.level.isClientSide) {
-            // Dies in the Nether
+            // They are instantly vaporized in the Nether
             if (this.level.dimensionType().ultraWarm()) {
                 this.vaporize();
             }
-
+            // White cloud riders are converted to gray cloud riders during a thunderstorm
+            // Gray variants are 33% stronger
+            // While white variants drop white cloud steeds, gray variants drop gray cloud steeds
+            // Gray cloud steeds strike lightning upon enemies on the ground below them
             if (this.tickCount % 20 == 0 &&
                     !this.isDeadOrDying() &&
                     this.getType() == ModEntityTypes.WHITE_CLOUD_RIDER.get() &&
@@ -127,44 +146,47 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                 CloudRiderEntity grayCloudRiderEntity = ModEntityTypes.GRAY_CLOUD_RIDER.get().create(serverLevel);
                 if (grayCloudRiderEntity != null) {
                     grayCloudRiderEntity.setHealth(this.getHealth());
-                    // TODO rotation
                     grayCloudRiderEntity.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
                     grayCloudRiderEntity.setNoAi(this.isNoAi());
                     serverLevel.addFreshEntityWithPassengers(grayCloudRiderEntity);
-                    this.playSound(SoundEvents.BEACON_POWER_SELECT);
-                    // TODO particles
+                    this.playSound(ModSounds.WHITE_CONVERTED_TO_GRAY.get());
                     this.discard();
                 }
             }
 
+            // Mob cap logic regarding persistence
             this.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
                 CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
-                    if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
-                        player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
-                            PlayerCap playerCap = (PlayerCap) iPlayerCap;
-                            boolean persistenceChanged = this.isPersistenceRequired() != cloudRiderCap.wasPersistent;
-                            if (persistenceChanged) {
-                                if (this.isPersistenceRequired()) {
-                                    if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
-                                    cloudRiderCap.wasPersistent = true;
-                                } else if (!this.isPersistenceRequired()) {
-                                    playerCap.numCloudRiders++;
-                                    cloudRiderCap.wasPersistent = false;
-                                }
+                if (this.tickCount % 20 == 0) System.out.println("player is null? " + (this.level.getEntity(cloudRiderCap.playerId) == null));
+                if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
+                    if (this.tickCount % 20 == 0) System.out.println(player.getId() + " (cloud rider: " + this.getId() + ") capability present? " + player.getCapability(ModCapabilities.PLAYER_CAPABILITY).isPresent());
+                    player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
+                        PlayerCap playerCap = (PlayerCap) iPlayerCap;
+                        boolean persistenceChanged = this.isPersistenceRequired() != cloudRiderCap.wasPersistent;
+                        if (persistenceChanged) {
+                            if (this.isPersistenceRequired()) {
+                                if (playerCap.numCloudRiders > 0) playerCap.numCloudRiders--;
+                                cloudRiderCap.wasPersistent = true;
+                            } else if (!this.isPersistenceRequired()) {
+                                playerCap.numCloudRiders++;
+                                cloudRiderCap.wasPersistent = false;
                             }
-                        });
-                    }
+                        }
+                    });
+                }
             });
 
-//            if (this.getTarget() instanceof EnderDragon) {
-//                if (CloudRider.ENTITY_ATTACK_ENTITY != null) {
-//                    for (ServerPlayer serverPlayer : this.level.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(100))) {
-//
-//                    }
-//                }
-//            }
+            // Challenge advancement is triggered when cloud riders target an ender dragon
+            if (this.getTarget() instanceof EnderDragon) {
+                if (ModCriteria.ENTITY_TARGET_ENTITY != null) {
+                    for (ServerPlayer serverPlayer : this.level.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(50))) {
+                        ModCriteria.ENTITY_TARGET_ENTITY.trigger(serverPlayer, this.getTarget());
+                    }
+                }
+            }
         }
         else {
+            // Particles during charge attack animation
             if (this.isCharging() && this.chargeAnimationTick < 60) {
                 Vec3 vec3 = this.getDeltaMovement();
                 Vec3 viewVector = this.getViewVector(1);
@@ -199,17 +221,32 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
             else {
                 this.chargeAnimationTick = 0;
             }
-        }
 
+            if (this.getType() == ModEntityTypes.GRAY_CLOUD_RIDER.get()) {
+                grayCloudParticles(this);
+            }
+        }
     }
 
+    public static void grayCloudParticles(Entity entity) {
+        if (entity.level.random.nextInt(3) == 0) {
+            entity.level.addAlwaysVisibleParticle(
+                    ParticleTypes.ELECTRIC_SPARK,
+                    entity.getX() + (entity.level.random.nextFloat() * 0.35 + 0.25) * (entity.level.random.nextBoolean() ? 1 : -1),
+                    entity.getY() + entity.level.random.nextFloat() * 0.875 - 0.4375,
+                    entity.getZ() + (entity.level.random.nextFloat() * 0.35 + 0.25) * (entity.level.random.nextBoolean() ? 1 : -1),
+                    0, 0, 0
+            );
+        }
+    }
+
+    // A sponge becomes a misty sponge when picking up white cloud riders, and a foggy sponge when picking up gray cloud riders
     @Override
     protected @NotNull InteractionResult mobInteract(@NotNull Player pPlayer, @NotNull InteractionHand pHand) {
         ItemStack emptySpongeItemStack = pPlayer.getItemInHand(pHand);
         if (emptySpongeItemStack.getItem() == Items.SPONGE && this.isAlive() && this.getTargetId() != pPlayer.getId()) {
             pPlayer.awardStat(Stats.ITEM_USED.get(emptySpongeItemStack.getItem()));
-            // TODO sound
-            this.playSound(SoundEvents.ARMOR_EQUIP_ELYTRA);
+            this.playSound(ModSounds.SPONGE_FILL_CLOUD_RIDER.get());
             ItemStack mistySpongeItemStack = this.getSpongeItemStack();
             if (this.hasCustomName()) {
                 mistySpongeItemStack.setHoverName(this.getCustomName());
@@ -238,24 +275,39 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         this.entityData.define(DATA_IS_CHARGE_COOLDOWN, false);
     }
 
+    // Cloud riders are not only instantly vaporized by the Nether, but also by lava and lightning bolts (not the
+    // lightning bolt projectiles)
     @Override
     public boolean hurt(@NotNull DamageSource pSource, float pAmount) {
-        if (pSource == DamageSource.LAVA || pSource == DamageSource.LIGHTNING_BOLT) {
+        if (!this.level.isClientSide && (pSource == DamageSource.LAVA || pSource == DamageSource.LIGHTNING_BOLT)) {
             return this.vaporize();
         }
         return super.hurt(pSource, pAmount);
     }
 
-    // TODO particles
     private boolean vaporize() {
         if (this.isDeadOrDying()) return false;
+        vaporizeParticles(this);
         this.playSound(SoundEvents.FIRE_EXTINGUISH);
         this.playSound(ModSounds.CLOUD_RIDER_VAPORIZE.get());
         return super.hurt(VAPORIZE, Float.MAX_VALUE);
     }
 
+    public static void vaporizeParticles(Entity entity) {
+        for (int i = 0; i < 8; i++) {
+            ((ServerLevel) entity.level).sendParticles(
+                    ParticleTypes.CLOUD,
+                    entity.getX() + entity.level.random.nextDouble(),
+                    entity.getY() + 1.2D,
+                    entity.getZ() + entity.level.random.nextDouble(),
+                    1, 0, 0, 0, 0
+            );
+        }
+    }
+
     @Override
     public void remove(@NotNull RemovalReason removalReason) {
+        // Mob cap logic upon death
         this.getCapability(ModCapabilities.CLOUD_RIDER_CAPABILITY).ifPresent(iCloudRiderCap -> {
             CloudRiderCap cloudRiderCap = (CloudRiderCap) iCloudRiderCap;
             if (this.level.getEntity(cloudRiderCap.playerId) instanceof Player player) {
@@ -284,6 +336,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         }
     }
 
+    // Animation logic
     private <E extends GeoAnimatable> PlayState predicate(AnimationState<E> event) {
         if (this.getTargetId() == -1) {
             event.getController().setAnimation(IDLE);
@@ -321,12 +374,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
 
     @Override
     protected SoundEvent getHurtSound(@NotNull DamageSource damageSourceIn) {
-        return SoundEvents.PLAYER_HURT;
+        return ModSounds.CLOUD_RIDER_HURT.get();
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.CREEPER_DEATH;
+        return ModSounds.CLOUD_RIDER_DEATH.get();
     }
 
     @Override
@@ -371,6 +424,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
         this.entityData.set(DATA_IS_CHARGE_COOLDOWN, isChargeCooldown);
     }
 
+    // Spawns in the overworld and in the air at y-level 192 (see spawning mechanics at event/ModEvents.java)
     public static boolean isValidSpawn(BlockPos blockPos, ServerLevel serverLevel) {
         if (!serverLevel.getBlockState(blockPos.below()).isAir()) return false;
         for (int i = 0; i < 2; i++) {
@@ -399,6 +453,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy 
                 (mob instanceof FlyingMob && !(mob instanceof CloudRiderEntity));
     }
 
+    // Hostile towards players if they are in the overworld and if they are not riding cloud steeds
     private boolean canAttackPlayer(LivingEntity player) {
         return CloudRiderCommonConfigs.CLOUD_RIDER_IS_HOSTILE.get() &&
                 player.level.dimension() == Level.OVERWORLD &&

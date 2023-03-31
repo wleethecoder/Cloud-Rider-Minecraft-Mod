@@ -123,6 +123,7 @@ public class ModEvents {
         public static void playerCloneEvent(PlayerEvent.Clone event) {
             Player newPlayer = event.getEntity();
             Player oldPlayer = event.getOriginal();
+            oldPlayer.reviveCaps();
             newPlayer.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iNewPlayerCap -> {
                 oldPlayer.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iOldPlayerCap -> {
                     PlayerCap newPlayerCap = (PlayerCap) iNewPlayerCap;
@@ -133,15 +134,16 @@ public class ModEvents {
             oldPlayer.invalidateCaps();
         }
 
-//        @SubscribeEvent
-//        public static void test(LivingEvent.LivingTickEvent event) {
-//            if (event.getEntity() instanceof Player player && !player.level.isClientSide) {
-//                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
-//                    PlayerCap playerCap = (PlayerCap) iPlayerCap;
-//                    System.out.println(playerCap.numCloudRiders);
-//                });
-//            }
-//        }
+        @SubscribeEvent
+        public static void test(LivingEvent.LivingTickEvent event) {
+            if (event.getEntity() instanceof Player player && !player.level.isClientSide && player.tickCount % 20 == 0) {
+                player.getCapability(ModCapabilities.PLAYER_CAPABILITY).ifPresent(iPlayerCap -> {
+                    PlayerCap playerCap = (PlayerCap) iPlayerCap;
+                    System.out.println(player.getId() + "'s number of spawned cloud riders: " + playerCap.numCloudRiders);
+                });
+            }
+        }
+
         @SubscribeEvent
         public static void droppedCloudSteedItemEvent(EntityJoinLevelEvent event) {
             if (event.getEntity() instanceof ItemEntity itemEntity && !itemEntity.level.isClientSide) {
