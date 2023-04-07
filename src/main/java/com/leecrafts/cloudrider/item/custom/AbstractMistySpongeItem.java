@@ -4,7 +4,6 @@ import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -21,16 +20,18 @@ public class AbstractMistySpongeItem extends BlockItem {
         this.isGray = isGray;
     }
 
+    // Placing down a misty/foggy sponge summons a white/gray cloud rider above. The sponge turns back to normal.
     @Override
     public @NotNull InteractionResult place(@NotNull BlockPlaceContext pContext) {
         InteractionResult interactionResult = super.place(pContext);
         if (interactionResult != InteractionResult.FAIL) {
             if (pContext.getLevel() instanceof ServerLevel serverLevel) {
-                EntityType<CloudRiderEntity> cloudRiderVariant = !this.isGray ? ModEntityTypes.WHITE_CLOUD_RIDER.get() :
-                        ModEntityTypes.GRAY_CLOUD_RIDER.get();
-                CloudRiderEntity cloudRiderEntity = cloudRiderVariant.spawn(serverLevel, pContext.getClickedPos().above(), MobSpawnType.MOB_SUMMONED);
+                CloudRiderEntity cloudRiderEntity = ModEntityTypes.CLOUD_RIDER.get().spawn(serverLevel, pContext.getClickedPos().above(), MobSpawnType.MOB_SUMMONED);
                 ItemStack itemStack = pContext.getItemInHand();
                 if (cloudRiderEntity != null) {
+                    if (this.isGray) {
+                        cloudRiderEntity.setVariant(CloudRiderEntity.Type.GRAY);
+                    }
                     if (itemStack.hasCustomHoverName()) {
                         cloudRiderEntity.setCustomName(itemStack.getHoverName());
                     }

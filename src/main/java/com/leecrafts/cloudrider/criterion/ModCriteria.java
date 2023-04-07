@@ -9,6 +9,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 public class ModCriteria {
 
+    // I have never seen anyone else do this before, but it works apparently
+
     public static EntityTargetEntityTrigger ENTITY_TARGET_ENTITY;
 
     @Mod.EventBusSubscriber(modid = CloudRider.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)

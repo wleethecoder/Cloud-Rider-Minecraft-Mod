@@ -37,12 +37,15 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.IntFunction;
 
 import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
 
 public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHolder<CloudSteedEntity.Type> {
+
+    // A fun vehicle that floats in the direction the passenger is looking
+    // Cloud riders become neutral towards the passenger
+    // Gray cloud steeds strike (grounded) enemy mobs below it with lightning
 
     private static final EntityDataAccessor<Integer> DATA_ID_TYPE = SynchedEntityData.defineId(CloudSteedEntity.class, EntityDataSerializers.INT);
     private final double MAX_SPEED_PER_SECOND = 20;
@@ -77,6 +80,10 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         return false;
     }
 
+    // Exposure to (vanilla) lightning bolts that are not its own, lightning bolt projectiles, lava, and the Nether
+    // destroys the cloud steed
+    // When hit with anything else, it transfers the damage to its passenger
+    // Otherwise, if it has no passenger, than anything can destroy it
     @Override
     public boolean hurt(@NotNull DamageSource pSource, float pAmount) {
         if (this.isInvulnerableTo(pSource)) {
@@ -91,8 +98,9 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
                 this.destroy();
                 return true;
             }
-            if (this.hasControllingPassenger()) {
-                return Objects.requireNonNull(this.getControllingPassenger()).hurt(pSource, pAmount);
+            Entity passenger = this.getControllingPassenger();
+            if (passenger != null) {
+                return passenger.hurt(pSource, pAmount);
             }
             this.destroy();
         }
@@ -114,6 +122,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     @Override
     public void tick() {
         super.tick();
+        // can't ride it in the Nether
         if (this.level.dimensionType().ultraWarm()) {
             this.hurt(DamageSource.LAVA, 0);
         }
@@ -122,6 +131,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         }
         if (this.isControlledByLocalInstance()) {
 
+            // Prevents an occasional clipping bug
             if (this.isOnGround()) {
 //                System.out.println("preventing clipping ☝️🤓");
                 this.setPos(this.getX(), this.getY() + 1e-5, this.getZ());
@@ -137,7 +147,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
             this.move(MoverType.SELF, this.getDeltaMovement());
         }
         // Gray cloud steeds summons thunder on enemy mobs below it
-        // The mob has to be on the ground, so this will probably not work on cloud riders!
+        // The mob has to be on the ground or in the water, so this will probably not work on cloud riders!
         else if (this.getControllingPassenger() instanceof LivingEntity passenger && this.getVariant() == Type.GRAY) {
             if (this.tickCount % 10 == 0) {
                 for (int i = this.getBlockY(); i >= -64; i--) {
@@ -177,6 +187,11 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         this.checkInsideBlocks();
     }
 
+    // Controls:
+    // W moves the vehicle in the direction its passenger is looking
+    // A/D moves the vehicle left/right
+    // S moves the vehicle in the opposite direction its passenger is looking
+    // Space cancels the vehicle's vertical movement, easing control of horizontal movement
     private void controlSteed() {
         if (this.isVehicle()) {
             LocalPlayer localPlayer = (LocalPlayer) getControllingPassenger();
@@ -185,7 +200,6 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
                 // Update steed's rotation so that the steed faces where the passenger faces
                 this.setYRot(localPlayer.getYHeadRot());
 
-                // Pressing space cancels y movement, easing the control of horizontal movement
                 double slowdownFactor = 0.95;
                 Vec3 deltaMovement = this.getDeltaMovement();
                 if (noMoveKeysPressed(localPlayer)) {

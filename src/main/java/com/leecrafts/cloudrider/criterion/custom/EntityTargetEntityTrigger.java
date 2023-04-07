@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class EntityTargetEntityTrigger extends SimpleCriterionTrigger<EntityTargetEntityTrigger.TriggerInstance> {
 
+    // This whole thing was created just for that one advancement
+
     static final ResourceLocation ID = new ResourceLocation(CloudRider.MODID, "entity_target_entity");
 
     @Override

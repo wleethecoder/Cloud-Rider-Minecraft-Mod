@@ -1,12 +1,9 @@
 package com.leecrafts.cloudrider.client.cloudrider;
 
 import com.leecrafts.cloudrider.CloudRider;
-import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 public class CloudRiderRenderer extends GeoEntityRenderer<CloudRiderEntity> {

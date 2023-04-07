@@ -15,6 +15,7 @@ public class CloudRiderCommonConfigs {
 
         CLOUD_RIDER_SPAWN_CAP = BUILDER.comment("Maximum amount of cloud riders that can spawn per player.")
                 .defineInRange("Cloud Rider Spawn Cap", 3, 0, 10);
+
         CLOUD_RIDER_IS_HOSTILE = BUILDER.comment("Whether or not cloud riders are hostile towards players. If value is set to false, then cloud riders are neutral.")
                 .define("Cloud Rider Is Hostile", true);
 

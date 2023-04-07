@@ -6,7 +6,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
@@ -87,7 +86,9 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         if (hitResult.getType() != HitResult.Type.MISS && !ForgeEventFactory.onProjectileImpact(this, hitResult)) {
             this.onHit(hitResult);
         }
+
         Vec3 vec3 = this.getDeltaMovement();
+        // For each tick, uncharged shots have a 16.7% chance of homing in on the target
         if (this.target != null && (this.isCharged || this.random.nextInt(6) == 0)) {
             double xDir = this.target.getX() - this.getX();
             double yDir = this.target.getY(0.25) - this.getY();
@@ -107,9 +108,6 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.setDeltaMovement(vec3);
         this.setPos(xNew, yNew, zNew);
 
-//        if (this.level.isClientSide) {
-//            this.level.addAlwaysVisibleParticle(ParticleTypes.ELECTRIC_SPARK, this.getX(), this.getY(), this.getZ(), 0, 0, 0);
-//        }
         if (!this.level.isClientSide) {
             SimpleParticleType simpleParticleType = ParticleTypes.ELECTRIC_SPARK;
             double particleSpeed = 0.7;
@@ -138,11 +136,13 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
                     new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
             damageSource = damageSource.setProjectile();
 
-            // setScalesWithDifficulty() will not work because scalesWithDifficulty() will always return false (LightningBoltProjectileEntity is not a LivingEntity)
+            // DamageSource::setScalesWithDifficulty() will not work because it will always return false (LightningBoltProjectileEntity is not a LivingEntity)
             damage = this.scaleWithDifficulty(this.damage);
 
+            // Charged projectiles always create an area of electricity
             boolean mustElectrify = this.isCharged;
             if (target instanceof Player || target instanceof Mob || target instanceof ArmorStand) {
+                // If the lightning bolt projectile hits a wet (or conductible) entity, then it creates an area of electricity
                 if (target.isInWaterRainOrBubble() || target instanceof IronGolem) {
                     mustElectrify = true;
                 }
@@ -155,19 +155,24 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
                         }
                     }
                 }
+
+                // Lightning bolt projectiles do twice the damage towards cloud riders and water creatures
                 if (target instanceof CloudRiderEntity ||
                         target instanceof WaterAnimal ||
                         target instanceof Guardian) {
                     damage *= 2;
                 }
             }
+
             // The Ender Dragon can be damaged by a lightning bolt projectile because it becomes registered as an "explosion"
             else if (target instanceof EnderDragonPart) {
                 damageSource = damageSource.setExplosion();
                 damage = (damage - 1) * 4;
             }
 
-            if (mustElectrify) this.electrify(target.getX(), target.getY(0.5), target.getZ());
+            if (mustElectrify) {
+                this.electrify(target.getX(), target.getY(0.5), target.getZ());
+            }
             target.hurt(damageSource, damage);
             if (shooter instanceof LivingEntity) {
                 this.doEnchantDamageEffects((LivingEntity) shooter, target);
@@ -176,18 +181,15 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     }
 
     private float scaleWithDifficulty(float damage) {
-        if (this.level.getDifficulty() == Difficulty.PEACEFUL) {
-            return 0.0F;
-        }
-        if (this.level.getDifficulty() == Difficulty.EASY) {
-            return Math.min(damage / 2.0f + 1.0f, damage);
-        }
-        if (this.level.getDifficulty() == Difficulty.NORMAL) {
-            return damage;
-        }
-        return damage * 1.5f;
+        return switch (this.level.getDifficulty()) {
+            case PEACEFUL -> 0.0f;
+            case EASY -> Math.min(damage / 2.0f + 1.0f, damage);
+            case NORMAL -> damage;
+            default -> damage * 1.5f;
+        };
     }
 
+    // If the lightning bolt projectile hits a conductible or wet block, then it creates an area of electricity
     @Override
     protected void onHitBlock(@NotNull BlockHitResult pResult) {
         super.onHitBlock(pResult);
@@ -210,6 +212,8 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         this.electrify(this.getX(), this.getY(), this.getZ());
     }
 
+    // Since it's based on gold, netherite may be a good conductor, but I think it would be unfair if netherite armor
+    // causes an area of electricity upon being hit
     private boolean isConductibleArmor(Item item) {
         return item instanceof ArmorItem armorItem &&
                 (armorItem.getMaterial() == ArmorMaterials.IRON ||
@@ -275,7 +279,9 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     }
 
     private void playAmbientSound() {
-        this.playSound(ModSounds.LIGHTNING_BOLT_PROJECTILE_AMBIENT.get(), 1.0f, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+        this.playSound(
+                ModSounds.LIGHTNING_BOLT_PROJECTILE_AMBIENT.get(), 1.0f,
+                (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
         this.resetAmbientSoundTime();
     }
 

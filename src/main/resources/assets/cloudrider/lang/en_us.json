@@ -1,11 +1,10 @@
 {
-  "entity.cloudrider.white_cloud_rider": "Cloud Rider",
-  "entity.cloudrider.gray_cloud_rider": "Cloud Rider",
+  "entity.cloudrider.cloud_rider": "Cloud Rider",
   "entity.cloudrider.lightning_bolt_projectile": "Lightning Bolt",
   "entity.cloudrider.cloud_steed": "Cloud Steed",
   "entity.cloudrider.electric_area_effect_cloud": "Electric Area Affect Cloud",
 
-  "item.cloudrider.white_cloud_rider_spawn_egg": "Cloud Rider Spawn Egg",
+  "item.cloudrider.cloud_rider_spawn_egg": "Cloud Rider Spawn Egg",
   "item.cloudrider.gray_cloud_rider_spawn_egg": "Gray Cloud Rider Spawn Egg",
   "item.cloudrider.white_cloud_steed": "Cloud Steed",
   "item.cloudrider.gray_cloud_steed": "Gray Cloud Steed",
@@ -31,7 +30,7 @@
   "death.attack.vaporize": "%1$s was vaporized without a trace",
   "death.attack.vaporize.player": "%1$s was vaporized without a trace whilst trying to escape %2$s",
 
-  "advancements.end.place_cloud_rider_in_end.title": "What Is This Place?",
+  "advancements.end.place_cloud_rider_in_end.title": "Where Am I?",
   "advancements.end.place_cloud_rider_in_end.description": "Bring a Cloud Rider to the End dimension",
   "advancements.end.cloud_rider_target_dragon.title": "Finally, a Worthy Opponent!",
   "advancements.end.cloud_rider_target_dragon.description": "Pit a Cloud Rider against the Ender Dragon"

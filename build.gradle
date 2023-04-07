@@ -60,6 +60,11 @@ minecraft {
             }
         }
 
+        clientalt {
+            parent runs.client
+            args '--username', 'the'
+        }
+
         server {
             workingDirectory project.file('run')
 

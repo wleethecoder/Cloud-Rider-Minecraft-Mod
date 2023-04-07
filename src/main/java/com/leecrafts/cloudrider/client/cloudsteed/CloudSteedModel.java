@@ -4,7 +4,6 @@ import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
@@ -16,6 +15,8 @@ public class CloudSteedModel extends GeoModel<CloudSteedEntity> {
         return new ResourceLocation(CloudRider.MODID, "geo/cloud_steed.geo.json");
     }
 
+    // Cloud steed becomes translucent when the player rides it (and is in first person view) so that the player can see
+    // what's below it
     @Override
     public ResourceLocation getTextureResource(CloudSteedEntity animatable) {
         String path = "textures/entity/";
@@ -40,7 +41,7 @@ public class CloudSteedModel extends GeoModel<CloudSteedEntity> {
     @Override
     public RenderType getRenderType(CloudSteedEntity animatable, ResourceLocation texture) {
         if (this.controlledAndFirstPersonView(animatable)) {
-            return RenderType.entityTranslucentCull(texture);
+            return RenderType.entityTranslucentEmissive(texture);
         }
         return super.getRenderType(animatable, texture);
     }

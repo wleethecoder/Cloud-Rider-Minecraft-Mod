@@ -14,13 +14,14 @@ public class LightningBoltProjectileModel extends GeoModel<LightningBoltProjecti
 
     @Override
     public ResourceLocation getTextureResource(LightningBoltProjectileEntity animatable) {
-        int mod4 = animatable.tickCount % 4;
-        if (mod4 == 0 || mod4 == 1){
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture1.png");
+        String path = "textures/entity/lightning_bolt_projectile_texture";
+        if (animatable.tickCount % 4 <= 1) {
+            path += "1.png";
         }
         else {
-            return new ResourceLocation(CloudRider.MODID, "textures/entity/lightning_bolt_projectile_texture2.png");
+            path += "2.png";
         }
+        return new ResourceLocation(CloudRider.MODID, path);
     }
 
     @Override

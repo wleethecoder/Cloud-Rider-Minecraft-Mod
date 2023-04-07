@@ -9,11 +9,16 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import static net.minecraft.SharedConstants.TICKS_PER_SECOND;
+
 public class ElectricAreaEffectCloud extends AreaEffectCloud {
+
+    // An area effect cloud that deals 3 damage (per 0.5 sec) and slows down movement
 
     public int ambientSoundTime;
 
@@ -22,7 +27,7 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
         this.setParticle(ParticleTypes.ELECTRIC_SPARK);
         this.setRadius(2.5f);
         this.setWaiting(false);
-        this.setDuration(60);
+        this.setDuration(3 * TICKS_PER_SECOND);
     }
 
     public ElectricAreaEffectCloud(Level level, double xPos, double yPos, double zPos) {
@@ -56,7 +61,15 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
                         livingEntity.hurtMarked = true;
                     }
                     livingEntity.hurt(new DamageSource("electrocution"), 3);
-                    livingEntity.setDeltaMovement(livingEntity.getDeltaMovement().scale(0.5));
+//                    livingEntity.setDeltaMovement(livingEntity.getDeltaMovement().scale(0.3));
+                    // Maximum speed of electrified entity is 3 m/s
+                    // TODO adjust slowdown
+                    Vec3 vec3 = livingEntity.getDeltaMovement();
+                    double slowdownSpeed = 3.0;
+                    if (livingEntity.isFallFlying()) {
+                        slowdownSpeed = 20.0;
+                    }
+                    livingEntity.setDeltaMovement(vec3.normalize().scale(Math.min(vec3.length(), slowdownSpeed / TICKS_PER_SECOND)));
                 }
             }
         }
