@@ -62,8 +62,7 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
                     }
                     livingEntity.hurt(new DamageSource("electrocution"), 3);
 //                    livingEntity.setDeltaMovement(livingEntity.getDeltaMovement().scale(0.3));
-                    // Maximum speed of electrified entity is 3 m/s
-                    // TODO adjust slowdown
+                    // Maximum speed of an electrified entity is 3 m/s
                     Vec3 vec3 = livingEntity.getDeltaMovement();
                     double slowdownSpeed = 3.0;
                     if (livingEntity.isFallFlying()) {

@@ -24,8 +24,7 @@ public class CloudSteedItem extends Item {
 
     // Regardless of where the player is looking, using this item places a cloud steed at (not below) the player's feet
     // Therefore, a cloud steed can be placed midair
-    // If the player is holding shift and places down a cloud steed, it automatically rides the vehicle
-    // TODO make player automatically ride it when shift right click?
+    // If the player is flying with an elytra and places down a cloud steed, it automatically rides the vehicle
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level pLevel, Player pPlayer, @NotNull InteractionHand pUsedHand) {
         ItemStack itemStack = pPlayer.getItemInHand(pUsedHand);
@@ -41,7 +40,7 @@ public class CloudSteedItem extends Item {
             if (!pPlayer.getAbilities().instabuild) {
                 itemStack.shrink(1);
             }
-            if (pPlayer.isShiftKeyDown() && pPlayer.isFallFlying()) {
+            if (pPlayer.isFallFlying()) {
                 pPlayer.startRiding(cloudSteedEntity, true);
             }
         }

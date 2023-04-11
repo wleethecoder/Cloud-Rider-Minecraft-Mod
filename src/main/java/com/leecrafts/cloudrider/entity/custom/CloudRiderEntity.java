@@ -116,12 +116,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
     }
 
     // 30 health, 32 follow range
-    // 3 attack damage on easy difficulty, 4 on normal, and 6 on hard
+    // 2.5 attack damage on easy difficulty, 3 on normal, and 4.5 on hard
     public static AttributeSupplier setAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, 30)
+                .add(Attributes.MAX_HEALTH, 35)
                 .add(Attributes.FOLLOW_RANGE, 32)
-                .add(Attributes.ATTACK_DAMAGE, 4).build();
+                .add(Attributes.ATTACK_DAMAGE, 3).build();
     }
 
     // If they are not attacking, they will go to the y-level where there are clouds.
@@ -147,7 +147,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
             }
 
             // Cloud riders turn gray during a thunderstorm
-            // Gray variants are 33% stronger
+            // Gray variants are 33.3% stronger
             // White variants drop white cloud steeds, and gray variants drop gray cloud steeds
             // Gray cloud steeds strike lightning upon enemies on the ground below them
             if (this.tickCount % TICKS_PER_SECOND == 0 &&
@@ -592,10 +592,14 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
                             1
                     );
                 }
-                float damage = (float) this.cloudRiderEntity.getAttributeValue(Attributes.ATTACK_DAMAGE);
                 if (!this.cloudRiderEntity.isCharging() && !this.cloudRiderEntity.isChargeCooldown()) {
                     if (this.cooldown++ >= SECONDS_PER_ATTACK * TICKS_PER_SECOND) {
-                        this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, target, damage, false);
+                        this.cloudRiderEntity.shootTarget(
+                                this.cloudRiderEntity,
+                                target,
+                                (float) this.cloudRiderEntity.getAttributeValue(Attributes.ATTACK_DAMAGE),
+                                false
+                        );
                         this.cooldown = 0;
                     }
 
@@ -611,8 +615,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
                         if (this.cooldown++ >= 3 * TICKS_PER_SECOND) {
                             this.cloudRiderEntity.setCharging(false);
                             this.cloudRiderEntity.setChargeCooldown(true);
-                            // TODO test game balance
-                            this.cloudRiderEntity.shootTarget(this.cloudRiderEntity, target, 4.5f * damage, true);
+                            this.cloudRiderEntity.shootTarget(
+                                    this.cloudRiderEntity,
+                                    target,
+                                    6 * (float) this.cloudRiderEntity.getAttributeBaseValue(Attributes.ATTACK_DAMAGE),
+                                    true
+                            );
                             this.cooldown = 0;
                         }
                     }

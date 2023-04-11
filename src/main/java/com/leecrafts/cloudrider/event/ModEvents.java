@@ -23,6 +23,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -35,7 +36,6 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -74,23 +74,26 @@ public class ModEvents {
 
         @SubscribeEvent
         public static void playerTick(LivingEvent.LivingTickEvent event) {
-            if (event.getEntity() instanceof Player player && !player.level.isClientSide && !player.isDeadOrDying()) {
+            if (event.getEntity() instanceof Player player && !player.level.isClientSide && !player.isDeadOrDying() && player.tickCount % TICKS_PER_SECOND == 0) {
                 // Cloud rider spawning mechanics
-                // A spawn attempt is made every three seconds
-                // TODO fix spawning glitch on respawn
+                // A spawn attempt is made every second
+
+                // Before checking amount of surrounding cloud riders, check if enough chunks have been loaded
                 ServerLevel serverLevel = (ServerLevel) player.level;
-                int chunkRadius = 8;
+                int chunkRadius = 6;
+                int blocksPerChunk = 16;
                 int playerX = player.getBlockX();
                 int playerZ = player.getBlockZ();
                 boolean chunksLoaded = true;
-                for (int x = playerX - 16 * chunkRadius; x <= playerX + 16 * chunkRadius; x += 16) {
-                    for (int z = playerZ - 16 * chunkRadius; z <= playerZ + 16 * chunkRadius; z += 16) {
+                for (int x = playerX - blocksPerChunk * chunkRadius; x <= playerX + blocksPerChunk * chunkRadius; x += blocksPerChunk) {
+                    for (int z = playerZ - blocksPerChunk * chunkRadius; z <= playerZ + blocksPerChunk * chunkRadius; z += blocksPerChunk) {
                         if (!serverLevel.isLoaded(new BlockPos(x, player.getBlockY(), z))) {
                             chunksLoaded = false;
                         }
                     }
                 }
-                if (chunksLoaded) { // && player.tickCount % (3 * TICKS_PER_SECOND) == 0) {
+                if (!chunksLoaded) System.out.println("outchungused the chunkuses");
+                if (chunksLoaded) {
                     int spawnRadius = 128;
                     if (serverLevel.dimension() == Level.OVERWORLD &&
                             !player.isSpectator() &&
@@ -157,6 +160,7 @@ public class ModEvents {
                         if (!cloudSteedItemCap.droppedFromPlayer) {
                             itemEntity.setNoGravity(true);
                             itemEntity.setDeltaMovement(Vec3.ZERO);
+                            itemEntity.setPickUpDelay(0);
                         }
                     });
                 }
@@ -177,6 +181,7 @@ public class ModEvents {
         // It would be unfair if a cloud steed item gets destroyed by lightning, especially if it is dropped from a
         // cloud rider that you killed with a channeling trident
         // It would also be unfair if a gray cloud steed gets destroyed by its own lightning
+        // And we don't want our precious villagers taking collateral damage from lightning caused by gray cloud steeds
         @SubscribeEvent
         public static void lightningStrikeEvent(EntityStruckByLightningEvent event) {
             if (!event.getEntity().level.isClientSide) {
@@ -185,7 +190,8 @@ public class ModEvents {
                         event.setCanceled(true);
                     }
                 }
-                else if (event.getEntity() instanceof CloudSteedEntity cloudSteedEntity && cloudSteedEntity.hasControllingPassenger()) {
+                else if ((event.getEntity() instanceof CloudSteedEntity cloudSteedEntity && cloudSteedEntity.hasControllingPassenger()) ||
+                        event.getEntity() instanceof Villager) {
                     LightningBolt lightningBolt = event.getLightning();
                     lightningBolt.getCapability(ModCapabilities.LIGHTNING_CAPABILITY).ifPresent(iLightningCap -> {
                         LightningCap lightningCap = (LightningCap) iLightningCap;
