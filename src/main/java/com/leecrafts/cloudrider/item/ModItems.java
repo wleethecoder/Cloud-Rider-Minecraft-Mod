@@ -9,8 +9,12 @@ import com.leecrafts.cloudrider.item.custom.MistySpongeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -38,6 +42,19 @@ public class ModItems {
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
+    }
+
+    @Mod.EventBusSubscriber(modid = CloudRider.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+    public static class ModItemsEvents {
+
+        @SubscribeEvent
+        public static void commonSetup(FMLCommonSetupEvent event) {
+            event.enqueueWork(() -> {
+                DispenserBlock.registerBehavior(ModItems.WHITE_CLOUD_STEED_ITEM.get(), new CloudSteedItem.CloudSteedDispenseItemBehavior(CloudSteedEntity.Type.WHITE));
+                DispenserBlock.registerBehavior(ModItems.GRAY_CLOUD_STEED_ITEM.get(), new CloudSteedItem.CloudSteedDispenseItemBehavior(CloudSteedEntity.Type.GRAY));
+            });
+        }
+
     }
 
 }

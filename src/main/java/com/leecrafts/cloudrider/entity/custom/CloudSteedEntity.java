@@ -122,10 +122,12 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     @Override
     public void tick() {
         super.tick();
+
         // can't ride it in the Nether
         if (this.level.dimensionType().ultraWarm()) {
             this.hurt(DamageSource.LAVA, 0);
         }
+
         if (this.level.isClientSide && this.getVariant() == Type.GRAY) {
             CloudRiderEntity.grayCloudParticles(this);
         }
@@ -193,57 +195,53 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     // S moves the vehicle in the opposite direction its passenger is looking
     // Space cancels the vehicle's vertical movement, easing control of horizontal movement
     private void controlSteed() {
-        if (this.isVehicle()) {
-            LocalPlayer localPlayer = (LocalPlayer) getControllingPassenger();
-            if (localPlayer != null) {
+        if (this.isVehicle() && this.getControllingPassenger() instanceof LocalPlayer localPlayer) {
+            // Update steed's rotation so that the steed faces where the passenger faces
+            this.setYRot(localPlayer.getYHeadRot());
 
-                // Update steed's rotation so that the steed faces where the passenger faces
-                this.setYRot(localPlayer.getYHeadRot());
-
-                double slowdownFactor = 0.95;
-                Vec3 deltaMovement = this.getDeltaMovement();
-                if (noMoveKeysPressed(localPlayer)) {
-                    this.setDeltaMovement(deltaMovement.scale(slowdownFactor));
+            double slowdownFactor = 0.93;
+            Vec3 deltaMovement = this.getDeltaMovement();
+            if (noMoveKeysPressed(localPlayer)) {
+                this.setDeltaMovement(deltaMovement.scale(slowdownFactor));
+            }
+            else if (noWASD(localPlayer)) {
+                this.setDeltaMovement(deltaMovement.multiply(slowdownFactor, 0, slowdownFactor));
+            }
+            else {
+                Vec3 vec3 = localPlayer.getViewVector(1);
+                if (localPlayer.input.down) {
+                    vec3 = vec3.reverse();
                 }
-                else if (noWASD(localPlayer)) {
-                    this.setDeltaMovement(deltaMovement.multiply(slowdownFactor, 0, slowdownFactor));
+                else if (localPlayer.input.left) {
+                    vec3 = strictLeft(vec3, localPlayer);
                 }
-                else {
-                    Vec3 vec3 = localPlayer.getViewVector(1);
-                    if (localPlayer.input.down) {
-                        vec3 = vec3.reverse();
-                    }
-                    else if (localPlayer.input.left) {
-                        vec3 = strictLeft(vec3, localPlayer);
-                    }
-                    else if (localPlayer.input.right) {
-                        vec3 = strictRight(vec3, localPlayer);
-                    }
+                else if (localPlayer.input.right) {
+                    vec3 = strictRight(vec3, localPlayer);
+                }
 
-                    if (localPlayer.input.jumping) {
-                        vec3 = toXZ(vec3);
-                        if (Math.abs(vec3.x) < 1e-15 && Math.abs(vec3.z) < 1e-15) {
-                            if (localPlayer.input.up) {
-                                vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1));
-                            }
-                            else if (localPlayer.input.down) {
-                                vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1)).reverse();
-                            }
+                if (localPlayer.input.jumping) {
+                    vec3 = toXZ(vec3);
+                    if (Math.abs(vec3.x) < 1e-15 && Math.abs(vec3.z) < 1e-15) {
+                        if (localPlayer.input.up) {
+                            vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1));
+                        }
+                        else if (localPlayer.input.down) {
+                            vec3 = calculateHorizontalViewVector(localPlayer.getViewYRot(1)).reverse();
                         }
                     }
-                    vec3 = vec3.normalize();
-
-                    Vec3 resultantVector = deltaMovement.add(vec3.scale(0.04));
-                    double maxSpeed = MAX_SPEED_PER_SECOND / TICKS_PER_SECOND;
-                    this.setDeltaMovement(resultantVector.length() < maxSpeed ?
-                            resultantVector : resultantVector.normalize().scale(maxSpeed));
-
-                    if (localPlayer.input.jumping) {
-                        this.setDeltaMovement(toXZ(this.getDeltaMovement()));
-                    }
                 }
+                vec3 = vec3.normalize();
 
+                Vec3 resultantVector = deltaMovement.add(vec3.scale(0.04));
+                double maxSpeed = MAX_SPEED_PER_SECOND / TICKS_PER_SECOND;
+                this.setDeltaMovement(resultantVector.length() < maxSpeed ?
+                        resultantVector : resultantVector.normalize().scale(maxSpeed));
+
+                if (localPlayer.input.jumping) {
+                    this.setDeltaMovement(toXZ(this.getDeltaMovement()));
+                }
             }
+
         }
     }
 
@@ -312,6 +310,21 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     @Override
     public Entity getControllingPassenger() {
         return super.getFirstPassenger();
+    }
+
+    // There was a bug that occurred whenever the player dismounted a moving cloud steed.
+    // The vehicle's client and server position would become out of sync, causing it to teleport to another location instead of under the player's feet.
+    // Additionally, the player would get stuck and experience a camera "jitter" effect.
+    // Discarding and replacing the vehicle was the only solution I found.
+    @Override
+    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity pPassenger) {
+        Vec3 vec3 = super.getDismountLocationForPassenger(pPassenger);
+        CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(this.getX(), this.getY(), this.getZ(), this.level);
+        cloudSteedEntity.setVariant(this.getVariant());
+        cloudSteedEntity.setYRot(this.getYRot());
+        this.level.addFreshEntity(cloudSteedEntity);
+        this.discard();
+        return vec3;
     }
 
     @Nullable

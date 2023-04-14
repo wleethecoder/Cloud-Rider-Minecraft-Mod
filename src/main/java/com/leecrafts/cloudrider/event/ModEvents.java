@@ -13,7 +13,10 @@ import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
 import com.leecrafts.cloudrider.item.ModItems;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.MutableComponent;
@@ -29,10 +32,13 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityMountEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -92,7 +98,6 @@ public class ModEvents {
                         }
                     }
                 }
-                if (!chunksLoaded) System.out.println("outchungused the chunkuses");
                 if (chunksLoaded) {
                     int spawnRadius = 128;
                     if (serverLevel.dimension() == Level.OVERWORLD &&
@@ -106,7 +111,6 @@ public class ModEvents {
                                 (new AABB(player.blockPosition())).inflate(spawnRadius),
                                 (cloudRiderEntity) -> !cloudRiderEntity.isPersistenceRequired()
                         ).size();
-                        System.out.println("number of non-persistent cloud riders is " + numSpawned);
                         if (numSpawned < CloudRiderCommonConfigs.CLOUD_RIDER_SPAWN_CAP.get()) {
                             double xSpawn = player.getX() - spawnRadius +
                                     player.getRandom().nextInt(spawnRadius * 2);
@@ -121,7 +125,7 @@ public class ModEvents {
                                     if (serverLevel.isThundering()) {
                                         cloudRiderEntity.setVariant(CloudRiderEntity.Type.GRAY);
                                     }
-                                    System.out.println("☁️ spawned in thanks to player " + player.getId());
+//                                    System.out.println("☁️ spawned in thanks to player " + player.getId());
                                 }
                             }
                         }
@@ -179,27 +183,28 @@ public class ModEvents {
         }
 
         // It would be unfair if a cloud steed item gets destroyed by lightning, especially if it is dropped from a
-        // cloud rider that you killed with a channeling trident
-        // It would also be unfair if a gray cloud steed gets destroyed by its own lightning
-        // And we don't want our precious villagers taking collateral damage from lightning caused by gray cloud steeds
+        // cloud rider that you killed with a channeling trident.
+        // Any items hit by gray cloud steed lightning will not get destroyed.
+        // It would also be unfair if a gray cloud steed gets destroyed by its own lightning.
+        // And we don't want our precious villagers taking collateral damage from lightning caused by gray cloud steeds.
         @SubscribeEvent
         public static void lightningStrikeEvent(EntityStruckByLightningEvent event) {
             if (!event.getEntity().level.isClientSide) {
-                if (event.getEntity() instanceof ItemEntity itemEntity) {
-                    if (isCloudSteedItem(itemEntity)) {
-                        event.setCanceled(true);
+                LightningBolt lightningBolt = event.getLightning();
+                lightningBolt.getCapability(ModCapabilities.LIGHTNING_CAPABILITY).ifPresent(iLightningCap -> {
+                    LightningCap lightningCap = (LightningCap) iLightningCap;
+                    if (event.getEntity() instanceof ItemEntity itemEntity) {
+                        if (isCloudSteedItem(itemEntity) || lightningCap.fromGrayCloudSteed) {
+                            event.setCanceled(true);
+                        }
                     }
-                }
-                else if ((event.getEntity() instanceof CloudSteedEntity cloudSteedEntity && cloudSteedEntity.hasControllingPassenger()) ||
-                        event.getEntity() instanceof Villager) {
-                    LightningBolt lightningBolt = event.getLightning();
-                    lightningBolt.getCapability(ModCapabilities.LIGHTNING_CAPABILITY).ifPresent(iLightningCap -> {
-                        LightningCap lightningCap = (LightningCap) iLightningCap;
+                    else if ((event.getEntity() instanceof CloudSteedEntity cloudSteedEntity && cloudSteedEntity.hasControllingPassenger()) ||
+                            event.getEntity() instanceof Villager) {
                         if (lightningCap.fromGrayCloudSteed) {
                             event.setCanceled(true);
                         }
-                    });
-                }
+                    }
+                });
             }
         }
 

@@ -1,6 +1,10 @@
 package com.leecrafts.cloudrider.item.custom;
 
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockSource;
+import net.minecraft.core.Direction;
+import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -9,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +52,38 @@ public class CloudSteedItem extends Item {
 
         pPlayer.awardStat(Stats.ITEM_USED.get(this));
         return InteractionResultHolder.sidedSuccess(itemStack, pLevel.isClientSide);
+    }
+
+    // Cloud steed entities can be shot out from dispensers.
+    public static class CloudSteedDispenseItemBehavior extends DefaultDispenseItemBehavior {
+
+        private final DefaultDispenseItemBehavior defaultDispenseItemBehavior = new DefaultDispenseItemBehavior();
+        private final CloudSteedEntity.Type type;
+
+        public CloudSteedDispenseItemBehavior(CloudSteedEntity.Type type) {
+            this.type = type;
+        }
+
+        @Override
+        protected @NotNull ItemStack execute(@NotNull BlockSource pSource, @NotNull ItemStack pStack) {
+            Direction direction = pSource.getBlockState().getValue(DispenserBlock.FACING);
+            Level level = pSource.getLevel();
+            double x = pSource.x() + (double)((float)direction.getStepX() * 1.25f);
+            double y = pSource.y() + (double)((float)direction.getStepY() * 1.25f);
+            double z = pSource.z() + (double)((float)direction.getStepZ() * 1.25f);
+            BlockPos blockPos = pSource.getPos().relative(direction);
+            CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(x, y, z, level);
+            cloudSteedEntity.setVariant(this.type);
+            cloudSteedEntity.setYRot(direction.toYRot());
+            if (!level.getBlockState(blockPos).isAir()) {
+                return this.defaultDispenseItemBehavior.dispense(pSource, pStack);
+            }
+            cloudSteedEntity.setPos(x, y, z);
+            level.addFreshEntity(cloudSteedEntity);
+            pStack.shrink(1);
+            return pStack;
+        }
+
     }
 
 }

@@ -49,6 +49,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NaturalSpawner;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -436,7 +437,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
     // Spawns in the overworld and in the air at y-level 192 (see spawning mechanics at event/ModEvents.java)
     public static boolean isValidSpawn(BlockPos blockPos, ServerLevel serverLevel) {
-        if (!serverLevel.getBlockState(blockPos.below()).isAir()) return false;
+        if (!serverLevel.getBlockState(blockPos.below()).isAir() || serverLevel.getBiome(blockPos).is(Biomes.MUSHROOM_FIELDS)) return false;
         for (int i = 0; i < 2; i++) {
             BlockPos blockPos1 = blockPos.above(i);
             BlockState blockState1 = serverLevel.getBlockState(blockPos1);
@@ -720,7 +721,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
                     // (Kind of) passive in the end; when attacked by a player, it will only retaliate once.
                     // I made it like this in case the player accidentally hits the cloud rider in the end; the player
                     // would otherwise have little to no means of escape without an elytra.
-                    // Also the cloud rider would be too distracted by either the Ender Dragon or the beauty of the End
+                    // The cloud rider would also be too distracted by either the Ender Dragon or the beauty of the End
                     // dimension to care.
                     if ((livingEntity.distanceTo(this.cloudRiderEntity) > this.cloudRiderEntity.getAttributeValue(Attributes.FOLLOW_RANGE) ||
                             (livingEntity instanceof Player player && player.level.dimension() == Level.END)) &&

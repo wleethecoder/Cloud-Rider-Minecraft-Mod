@@ -42,9 +42,10 @@ authors="LeeCrafts" #optional
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Ever since you used the Elytra, have you noticed that the sky is a little...empty?
+Has the sky felt a little empty whenever you fly with an Elytra?
 This mod adds a new hostile mob that lives in the sky: the cloud rider.
-This mob is meant to challenge players late-game. Better prepare yourself with those fully enchanted gear! There can only be one ruler of the skies!
+The cloud rider mercilessly bombards its victims with lightning bolts, posing a challenge for late-game players.
+Prepare yourself with fully enchanted gear...there can only be one ruler of the skies!
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.cloudrider]] #optional
