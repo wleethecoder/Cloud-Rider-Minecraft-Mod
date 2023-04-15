@@ -1,6 +1,7 @@
 package com.leecrafts.cloudrider.entity.custom;
 
 import com.leecrafts.cloudrider.capability.ModCapabilities;
+import com.leecrafts.cloudrider.capability.cloudsteedentity.CloudSteedEntityCap;
 import com.leecrafts.cloudrider.capability.lightning.LightningCap;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
@@ -319,11 +320,22 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
     @Override
     public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity pPassenger) {
         Vec3 vec3 = super.getDismountLocationForPassenger(pPassenger);
-        CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(this.getX(), this.getY(), this.getZ(), this.level);
-        cloudSteedEntity.setVariant(this.getVariant());
-        cloudSteedEntity.setYRot(this.getYRot());
-        this.level.addFreshEntity(cloudSteedEntity);
-        this.discard();
+        this.getCapability(ModCapabilities.CLOUD_STEED_ENTITY_CAPABILITY).ifPresent(iCloudSteedEntityCap -> {
+            CloudSteedEntityCap cloudSteedEntityCap = (CloudSteedEntityCap) iCloudSteedEntityCap;
+            // For some reason, when the player "dismounts" the vehicle by logging off, calling discard() does not actually discard the vehicle.
+            // Therefore, in this situation, another steed shouldn't replace it.
+            if (!cloudSteedEntityCap.playerPassengerHadLoggedOut) {
+                CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(this.getX(), this.getY(), this.getZ(), this.level);
+                cloudSteedEntity.setVariant(this.getVariant());
+                cloudSteedEntity.setYRot(this.getYRot());
+                this.level.addFreshEntity(cloudSteedEntity);
+                this.discard();
+            }
+            else {
+                cloudSteedEntityCap.playerPassengerHadLoggedOut = false;
+            }
+            // this.discard();
+        });
         return vec3;
     }
 

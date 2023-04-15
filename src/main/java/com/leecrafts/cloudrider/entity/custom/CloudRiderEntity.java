@@ -88,7 +88,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
     public static final int CLOUD_LEVEL = 192;
     public static final int LOWEST_LEVEL_OVERWORLD = 112;
-    public static final int TARGET_LEVEL_END = 80;
+    public static final int TARGET_LEVEL_END = 100;
     public static final int LOWEST_LEVEL_END = 70;
     public static final double MOVEMENT_SPEED_PER_SECOND = 45;
     public static final double SECONDS_PER_ATTACK = 0.25;
@@ -188,11 +188,9 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
             }
 
             // Challenge advancement is triggered when cloud riders target an ender dragon
-            if (this.getTarget() instanceof EnderDragon) {
-                if (ModCriteria.ENTITY_TARGET_ENTITY != null) {
-                    for (ServerPlayer serverPlayer : this.level.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(50))) {
-                        ModCriteria.ENTITY_TARGET_ENTITY.trigger(serverPlayer, this.getTarget());
-                    }
+            if (this.tickCount % 10 == 0 && this.getTarget() instanceof EnderDragon && ModCriteria.ENTITY_TARGET_ENTITY != null) {
+                for (ServerPlayer serverPlayer : this.level.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(80))) {
+                    ModCriteria.ENTITY_TARGET_ENTITY.trigger(serverPlayer, this.getTarget());
                 }
             }
         }
@@ -395,10 +393,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
     // Gray cloud riders drop 1 gray cloud steed when killed by the player
     @Override
     protected @NotNull ResourceLocation getDefaultLootTable() {
-        if (this.getVariant() == Type.WHITE) {
-            return LOOT_TABLE_WHITE;
-        }
-        return LOOT_TABLE_GRAY;
+        return this.getVariant() == Type.WHITE ? LOOT_TABLE_WHITE : LOOT_TABLE_GRAY;
     }
 
     @Override

@@ -2,6 +2,9 @@ package com.leecrafts.cloudrider.event;
 
 import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.capability.ModCapabilities;
+import com.leecrafts.cloudrider.capability.cloudsteedentity.CloudSteedEntityCap;
+import com.leecrafts.cloudrider.capability.cloudsteedentity.CloudSteedEntityCapProvider;
+import com.leecrafts.cloudrider.capability.cloudsteedentity.ICloudSteedEntityCap;
 import com.leecrafts.cloudrider.capability.cloudsteeditem.CloudSteedItemCap;
 import com.leecrafts.cloudrider.capability.cloudsteeditem.CloudSteedItemCapProvider;
 import com.leecrafts.cloudrider.capability.cloudsteeditem.ICloudSteedItemCap;
@@ -13,10 +16,7 @@ import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.entity.custom.CloudRiderEntity;
 import com.leecrafts.cloudrider.entity.custom.CloudSteedEntity;
 import com.leecrafts.cloudrider.item.ModItems;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.MutableComponent;
@@ -32,16 +32,14 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityMountEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -57,6 +55,7 @@ public class ModEvents {
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
             event.register(ILightningCap.class);
             event.register(ICloudSteedItemCap.class);
+            event.register(ICloudSteedEntityCap.class);
         }
 
         @SubscribeEvent
@@ -75,6 +74,15 @@ public class ModEvents {
                 CloudSteedItemCapProvider cloudSteedItemCapProvider = new CloudSteedItemCapProvider();
                 event.addCapability(new ResourceLocation(CloudRider.MODID, "dropped_from_player"), cloudSteedItemCapProvider);
                 event.addListener(cloudSteedItemCapProvider::invalidate);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onAttachCapabilitiesEventCloudSteedEntity(AttachCapabilitiesEvent<Entity> event) {
+            if (event.getObject() instanceof CloudSteedEntity cloudSteedEntity && !cloudSteedEntity.getCommandSenderWorld().isClientSide) {
+                CloudSteedEntityCapProvider cloudSteedEntityCapProvider = new CloudSteedEntityCapProvider();
+                event.addCapability(new ResourceLocation(CloudRider.MODID, "player_passenger_had_logged_out"), cloudSteedEntityCapProvider);
+                event.addListener(cloudSteedEntityCapProvider::invalidate);
             }
         }
 
@@ -211,6 +219,23 @@ public class ModEvents {
         private static boolean isCloudSteedItem(ItemEntity itemEntity) {
             return itemEntity.getItem().is(ModItems.WHITE_CLOUD_STEED_ITEM.get()) ||
                     itemEntity.getItem().is(ModItems.GRAY_CLOUD_STEED_ITEM.get());
+        }
+
+        // If logging out while riding a cloud steed, the (player) passenger "dismounts" it, and calling Entity::discard does not actually work for some reason.
+        // The cloud steed's replacement still gets added to the world, so if the player then rejoins the world, the vehicle gets duplicated.
+        // To prevent this bug, this event listener must check if the player is riding the cloud steed while logging out.
+        // See entity/custom/CloudSteedEntity.java
+        @SubscribeEvent
+        public static void playerLogOutEvent(PlayerEvent.PlayerLoggedOutEvent event) {
+            Player player = event.getEntity();
+            if (!player.level.isClientSide) {
+                if (player.getVehicle() instanceof CloudSteedEntity cloudSteedEntity) {
+                    cloudSteedEntity.getCapability(ModCapabilities.CLOUD_STEED_ENTITY_CAPABILITY).ifPresent(iCloudSteedEntityCap -> {
+                        CloudSteedEntityCap cloudSteedEntityCap = (CloudSteedEntityCap) iCloudSteedEntityCap;
+                        cloudSteedEntityCap.playerPassengerHadLoggedOut = true;
+                    });
+                }
+            }
         }
 
     }

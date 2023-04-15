@@ -68,9 +68,9 @@ public class CloudSteedItem extends Item {
         protected @NotNull ItemStack execute(@NotNull BlockSource pSource, @NotNull ItemStack pStack) {
             Direction direction = pSource.getBlockState().getValue(DispenserBlock.FACING);
             Level level = pSource.getLevel();
-            double x = pSource.x() + (double)((float)direction.getStepX() * 1.25f);
-            double y = pSource.y() + (double)((float)direction.getStepY() * 1.25f);
-            double z = pSource.z() + (double)((float)direction.getStepZ() * 1.25f);
+            double x = pSource.x() + (direction.getStepX() * 1.25);
+            double y = pSource.y() + (direction.getStepY() * 1.25);
+            double z = pSource.z() + (direction.getStepZ() * 1.25);
             BlockPos blockPos = pSource.getPos().relative(direction);
             CloudSteedEntity cloudSteedEntity = new CloudSteedEntity(x, y, z, level);
             cloudSteedEntity.setVariant(this.type);

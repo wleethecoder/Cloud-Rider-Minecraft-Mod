@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.boss.EnderDragonPart;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.entity.player.Player;
@@ -70,7 +71,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     public void shoot(LivingEntity target, float velocity) {
         this.target = target;
         double xDir = this.target.getX() - this.getX();
-        double yDir = this.target.getY(0.25) - this.getY();
+        double yDir = this.target.getY(this.target instanceof EnderDragon ? 0.25 : 0.5) - this.getY();
         double zDir = this.target.getZ() - this.getZ();
         this.shoot(xDir, yDir, zDir, velocity, 0.0f);
     }
@@ -91,7 +92,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         // For each tick, uncharged shots have a 16.7% chance of homing in on the target
         if (this.target != null && (this.isCharged || this.random.nextInt(6) == 0)) {
             double xDir = this.target.getX() - this.getX();
-            double yDir = this.target.getY(0.25) - this.getY();
+            double yDir = this.target.getY(this.target instanceof EnderDragon ? 0.25 : 0.5) - this.getY();
             double zDir = this.target.getZ() - this.getZ();
             Vec3 newVec3 = new Vec3(xDir, yDir, zDir);
             newVec3 = newVec3.normalize().scale(vec3.length());
@@ -218,8 +219,7 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
         return item instanceof ArmorItem armorItem &&
                 (armorItem.getMaterial() == ArmorMaterials.IRON ||
                         armorItem.getMaterial() == ArmorMaterials.CHAIN ||
-                        armorItem.getMaterial() == ArmorMaterials.GOLD ||
-                        armorItem.getMaterial() == ArmorMaterials.IRON);
+                        armorItem.getMaterial() == ArmorMaterials.GOLD);
     }
 
     private boolean isConductibleBlock(BlockState blockState) {
