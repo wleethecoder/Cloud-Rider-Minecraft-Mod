@@ -317,11 +317,12 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
     public static void vaporizeParticles(Entity entity) {
         for (int i = 0; i < 8; i++) {
-            ((ServerLevel) entity.level).sendParticles(
+            ServerLevel serverLevel = (ServerLevel) entity.level;
+            serverLevel.sendParticles(
                     ParticleTypes.CLOUD,
-                    entity.getX() + entity.level.random.nextDouble(),
-                    entity.getY() + 1.2D,
-                    entity.getZ() + entity.level.random.nextDouble(),
+                    entity.getX() + serverLevel.random.nextDouble(),
+                    entity.getY() + 1.2,
+                    entity.getZ() + serverLevel.random.nextDouble(),
                     1, 0, 0, 0, 0
             );
         }
@@ -658,9 +659,11 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
         @Override
         public void start() {
-            double x = this.cloudRiderEntity.getX();
-            double z = this.cloudRiderEntity.getZ();
-            this.cloudRiderEntity.getMoveControl().setWantedPosition(x, getTargetLevel(this.cloudRiderEntity.level), z, 1);
+            this.cloudRiderEntity.getMoveControl().setWantedPosition(
+                    this.cloudRiderEntity.getX(),
+                    getTargetLevel(this.cloudRiderEntity.level),
+                    this.cloudRiderEntity.getZ(), 1
+            );
         }
 
     }
