@@ -162,8 +162,10 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
             AttributeInstance attackDamageAttribute = this.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attackDamageAttribute != null) {
-                if (this.getVariant() == Type.GRAY && !attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
-                    attackDamageAttribute.addTransientModifier(ATTACK_MODIFIER_THUNDER);
+                if (this.getVariant() == Type.GRAY) {
+                    if (!attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
+                        attackDamageAttribute.addTransientModifier(ATTACK_MODIFIER_THUNDER);
+                    }
                 }
                 else if (attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
                     attackDamageAttribute.removeModifier(ATTACK_MODIFIER_THUNDER);
@@ -175,8 +177,10 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
             if (this.tickCount % (3 * TICKS_PER_SECOND) == 0 && followRangeAttribute != null) {
                 if (this.level.dimension() == Level.END) {
                     List<EnderDragon> enderDragons = this.level.getEntitiesOfClass(EnderDragon.class, this.getBoundingBox().inflate(128));
-                    if (enderDragons.size() > 0 && !followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
-                        followRangeAttribute.addTransientModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
+                    if (enderDragons.size() > 0) {
+                        if (!followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
+                            followRangeAttribute.addTransientModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
+                        }
                     }
                     else if (followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
                         followRangeAttribute.removeModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
