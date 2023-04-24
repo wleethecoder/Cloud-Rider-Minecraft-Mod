@@ -3,6 +3,7 @@ package com.leecrafts.cloudrider.entity.custom;
 import com.leecrafts.cloudrider.CloudRider;
 import com.leecrafts.cloudrider.config.CloudRiderCommonConfigs;
 import com.leecrafts.cloudrider.criterion.ModCriteria;
+import com.leecrafts.cloudrider.damagesource.ModDamageTypes;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.item.ModItems;
 import com.leecrafts.cloudrider.sound.ModSounds;
@@ -24,6 +25,7 @@ import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -106,7 +108,6 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
     private static final RawAnimation CHARGE = RawAnimation.begin().thenPlay("animation.cloud_rider.charge");
     private static final ResourceLocation LOOT_TABLE_WHITE = new ResourceLocation(CloudRider.MODID, "entities/white_cloud_rider");
     private static final ResourceLocation LOOT_TABLE_GRAY = new ResourceLocation(CloudRider.MODID, "entities/gray_cloud_rider");
-    public static final DamageSource VAPORIZE = new DamageSource("vaporize");
     public int chargeAnimationTick;
 
     public CloudRiderEntity(EntityType<? extends CloudRiderEntity> pEntityType, Level pLevel) {
@@ -162,8 +163,10 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
 
             AttributeInstance attackDamageAttribute = this.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attackDamageAttribute != null) {
-                if (this.getVariant() == Type.GRAY && !attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
-                    attackDamageAttribute.addTransientModifier(ATTACK_MODIFIER_THUNDER);
+                if (this.getVariant() == Type.GRAY) {
+                    if (!attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
+                        attackDamageAttribute.addTransientModifier(ATTACK_MODIFIER_THUNDER);
+                    }
                 }
                 else if (attackDamageAttribute.hasModifier(ATTACK_MODIFIER_THUNDER)) {
                     attackDamageAttribute.removeModifier(ATTACK_MODIFIER_THUNDER);
@@ -175,8 +178,10 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
             if (this.tickCount % (3 * TICKS_PER_SECOND) == 0 && followRangeAttribute != null) {
                 if (this.level.dimension() == Level.END) {
                     List<EnderDragon> enderDragons = this.level.getEntitiesOfClass(EnderDragon.class, this.getBoundingBox().inflate(128));
-                    if (enderDragons.size() > 0 && !followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
-                        followRangeAttribute.addTransientModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
+                    if (enderDragons.size() > 0) {
+                        if (!followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
+                            followRangeAttribute.addTransientModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
+                        }
                     }
                     else if (followRangeAttribute.hasModifier(FOLLOW_RANGE_MODIFIER_DRAGON)) {
                         followRangeAttribute.removeModifier(FOLLOW_RANGE_MODIFIER_DRAGON);
@@ -301,7 +306,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
     // lightning bolt projectiles)
     @Override
     public boolean hurt(@NotNull DamageSource pSource, float pAmount) {
-        if (!this.level.isClientSide && (pSource == DamageSource.LAVA || pSource == DamageSource.LIGHTNING_BOLT)) {
+        if (!this.level.isClientSide && (pSource.is(DamageTypes.LAVA) || pSource.is(DamageTypes.LIGHTNING_BOLT))) {
             return this.vaporize();
         }
         return super.hurt(pSource, pAmount);
@@ -312,7 +317,7 @@ public class CloudRiderEntity extends FlyingMob implements GeoAnimatable, Enemy,
         vaporizeParticles(this);
         this.playSound(SoundEvents.FIRE_EXTINGUISH);
         this.playSound(ModSounds.CLOUD_RIDER_VAPORIZE.get());
-        return super.hurt(VAPORIZE, Float.MAX_VALUE);
+        return super.hurt(this.damageSources().source(ModDamageTypes.VAPORIZE), Float.MAX_VALUE);
     }
 
     public static void vaporizeParticles(Entity entity) {

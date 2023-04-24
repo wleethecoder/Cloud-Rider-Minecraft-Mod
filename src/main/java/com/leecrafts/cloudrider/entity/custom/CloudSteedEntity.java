@@ -19,6 +19,7 @@ import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
@@ -91,8 +92,8 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
             return false;
         }
         if (!this.level.isClientSide && !this.isRemoved()) {
-            if (pSource == DamageSource.LAVA ||
-                    pSource == DamageSource.LIGHTNING_BOLT ||
+            if (pSource.is(DamageTypes.LAVA) ||
+                    pSource.is(DamageTypes.LIGHTNING_BOLT) ||
                     (pSource.getDirectEntity() != null && pSource.getDirectEntity().getType() == ModEntityTypes.LIGHTNING_BOLT_PROJECTILE.get())) {
                 CloudRiderEntity.vaporizeParticles(this);
                 this.playSound(SoundEvents.FIRE_EXTINGUISH);
@@ -126,7 +127,7 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
 
         // can't ride it in the Nether
         if (this.level.dimensionType().ultraWarm()) {
-            this.hurt(DamageSource.LAVA, 0);
+            this.hurt(this.damageSources().lava(), 0);
         }
 
         if (this.level.isClientSide && this.getVariant() == Type.GRAY) {
@@ -151,7 +152,8 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
         }
         // Gray cloud steeds summons thunder on enemy mobs below it
         // The mob has to be on the ground or in the water, so this will probably not work on cloud riders!
-        else if (this.getControllingPassenger() instanceof LivingEntity passenger && this.getVariant() == Type.GRAY) {
+        else if (this.getControllingPassenger() != null && this.getVariant() == Type.GRAY) {
+            LivingEntity passenger = this.getControllingPassenger();
             if (this.tickCount % 10 == 0) {
                 for (int i = this.getBlockY(); i >= -64; i--) {
                     BlockPos blockPos = this.blockPosition().atY(i);
@@ -309,8 +311,8 @@ public class CloudSteedEntity extends Entity implements GeoAnimatable, VariantHo
 
     @Nullable
     @Override
-    public Entity getControllingPassenger() {
-        return super.getFirstPassenger();
+    public LivingEntity getControllingPassenger() {
+        return (LivingEntity) super.getFirstPassenger();
     }
 
     // There was a bug that occurred whenever the player dismounted a moving cloud steed.

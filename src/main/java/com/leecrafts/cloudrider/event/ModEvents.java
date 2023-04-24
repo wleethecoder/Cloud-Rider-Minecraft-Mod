@@ -24,6 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.Villager;
@@ -38,7 +39,9 @@ import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -120,10 +123,10 @@ public class ModEvents {
                                 (cloudRiderEntity) -> !cloudRiderEntity.isPersistenceRequired()
                         ).size();
                         if (numSpawned < CloudRiderCommonConfigs.CLOUD_RIDER_SPAWN_CAP.get()) {
-                            double xSpawn = player.getX() - spawnRadius +
+                            int xSpawn = player.getBlockX() - spawnRadius +
                                     player.getRandom().nextInt(spawnRadius * 2);
-                            double ySpawn = CLOUD_LEVEL - 4 + player.getRandom().nextInt(8);
-                            double zSpawn = player.getZ() - spawnRadius +
+                            int ySpawn = CLOUD_LEVEL - 4 + player.getRandom().nextInt(8);
+                            int zSpawn = player.getBlockZ() - spawnRadius +
                                     player.getRandom().nextInt(spawnRadius * 2);
                             BlockPos blockPos = new BlockPos(xSpawn, ySpawn, zSpawn);
                             if (player.distanceToSqr(xSpawn, ySpawn, zSpawn) >= 48 * 48 &&

@@ -7,7 +7,6 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.IndirectEntityDamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -131,14 +130,9 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
     protected void onHitEntity(@NotNull EntityHitResult pResult) {
         Entity shooter = this.getOwner();
         Entity target = pResult.getEntity();
-        float damage;
+        float damage = this.damage;
         if (!this.level.isClientSide) {
-            DamageSource damageSource = shooter instanceof LivingEntity ? DamageSource.indirectMobAttack(this, (LivingEntity) shooter) :
-                    new IndirectEntityDamageSource("lightningBoltProjectile", this, this);
-            damageSource = damageSource.setProjectile();
-
-            // DamageSource::setScalesWithDifficulty() will not work because it will always return false (LightningBoltProjectileEntity is not a LivingEntity)
-            damage = this.scaleWithDifficulty(this.damage);
+            DamageSource damageSource = this.damageSources().mobProjectile(this, (LivingEntity) shooter);
 
             // Charged projectiles always create an area of electricity
             boolean mustElectrify = this.isCharged;
@@ -165,29 +159,19 @@ public class LightningBoltProjectileEntity extends Projectile implements GeoAnim
                 }
             }
 
-            // The Ender Dragon can be damaged by a lightning bolt projectile because it becomes registered as an "explosion"
-            else if (target instanceof EnderDragonPart) {
-                damageSource = damageSource.setExplosion();
-                damage = (damage - 1) * 4;
-            }
-
             if (mustElectrify) {
                 this.electrify(target.getX(), target.getY(0.5), target.getZ());
             }
-            target.hurt(damageSource, damage);
-            if (shooter instanceof LivingEntity) {
+            if (target instanceof EnderDragonPart enderDragonPart) {
+                enderDragonPart.parentMob.reallyHurt(damageSource, damage);
+            }
+            else {
+                target.hurt(damageSource, damage);
+            }
+            if (shooter != null) {
                 this.doEnchantDamageEffects((LivingEntity) shooter, target);
             }
         }
-    }
-
-    private float scaleWithDifficulty(float damage) {
-        return switch (this.level.getDifficulty()) {
-            case PEACEFUL -> 0.0f;
-            case EASY -> Math.min(damage / 2.0f + 1.0f, damage);
-            case NORMAL -> damage;
-            default -> damage * 1.5f;
-        };
     }
 
     // If the lightning bolt projectile hits a conductible or wet block, then it creates an area of electricity

@@ -1,11 +1,11 @@
 package com.leecrafts.cloudrider.entity.custom;
 
+import com.leecrafts.cloudrider.damagesource.ModDamageTypes;
 import com.leecrafts.cloudrider.entity.ModEntityTypes;
 import com.leecrafts.cloudrider.sound.ModSounds;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -60,7 +60,7 @@ public class ElectricAreaEffectCloud extends AreaEffectCloud {
                     if (livingEntity instanceof Player) {
                         livingEntity.hurtMarked = true;
                     }
-                    livingEntity.hurt(new DamageSource("electrocution"), 3);
+                    livingEntity.hurt(this.damageSources().source(ModDamageTypes.ELECTROCUTION), 3);
 //                    livingEntity.setDeltaMovement(livingEntity.getDeltaMovement().scale(0.3));
                     // Maximum speed of an electrified entity is 3 m/s
                     Vec3 vec3 = livingEntity.getDeltaMovement();
